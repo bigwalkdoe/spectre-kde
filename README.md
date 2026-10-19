@@ -1,4 +1,4 @@
-# spectre-kde-config
+# spectre-kde
 
 A clean, reversible, reproducible KDE Plasma configuration that gives Fedora KDE
 a polished **macOS-inspired** workflow while staying 100% native to KDE Plasma.
