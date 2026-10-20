@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spectre-kde-config -- switch.sh
+# spectre-kde -- switch.sh
 # Automates dark/light mode on a daily schedule without a cron entry:
 #   ./switch.sh --install        # install user systemd timer + service
 #   ./switch.sh --uninstall      # remove them
@@ -176,7 +176,7 @@ ExecStart=$ROOT/switch.sh --auto
 EOF
     cat > "$HOME/.config/systemd/user/$TIM" <<EOF
 [Unit]
-Description=Check dark/light boundary for spectre-kde-config
+Description=Check dark/light boundary for spectre-kde
 
 [Timer]
 OnBootSec=2min

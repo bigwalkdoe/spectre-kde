@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spectre-kde-config -- rollback.sh
+# spectre-kde -- rollback.sh
 # Restores the most recent timestamped backup and reloads the desktop shell.
 # No manual bookkeeping needed: backups are chronological directories under
 # ~/.config/kde-backups/YYYYmmdd-HHMMSS/.
