@@ -9,14 +9,17 @@
 #   ./switch.sh --follow-schedule  # drop the pin, hand control back to the timer
 #
 # Times default to sunrise/sunset and can be overridden per-machine in
-#   ~/.config/kde-macos/switch.conf   ->   SUNRISE=06:30   SUNSET=19:30
+#   ~/.config/spectre-kde/switch.conf   ->   SUNRISE=06:30   SUNSET=19:30
 # A manual --light/--dark pins that mode in the same file (OVERRIDE=light|dark),
 # which --auto then honours until --follow-schedule clears it.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"; cd "$ROOT"
-UCFG="$HOME/.config/kde-macos"
-SVC=kde-macos-switch.service
-TIM=kde-macos-switch.timer
+UCFG="$HOME/.config/spectre-kde"
+LEGACY_UCFG="$HOME/.config/kde-macos"
+SVC=spectre-kde-switch.service
+TIM=spectre-kde-switch.timer
+LEGACY_SVC=kde-macos-switch.service
+LEGACY_TIM=kde-macos-switch.timer
 
 # ---- configuration --------------------------------------------------------
 SUNRISE="06:30"
@@ -25,9 +28,16 @@ SUNSET="19:30"
 # clock. Defaulted here rather than only in switch.conf so an absent key and an
 # absent file behave the same under `set -u`.
 OVERRIDE=""
-if [ -f "$UCFG/switch.conf" ]; then
+# Fall back to the pre-rename location until --install migrates it. Reading the
+# old file keeps an existing schedule and pin alive across the upgrade instead
+# of silently resetting both to the defaults.
+CONF="$UCFG/switch.conf"
+if [ ! -f "$CONF" ] && [ -f "$LEGACY_UCFG/switch.conf" ]; then
+  CONF="$LEGACY_UCFG/switch.conf"
+fi
+if [ -f "$CONF" ]; then
   # shellcheck source=/dev/null
-  . "$UCFG/switch.conf"
+  . "$CONF"
 fi
 
 # Validate the schedule. switch.conf is sourced, so a typo there (empty value,
@@ -36,7 +46,7 @@ fi
 _valid_time(){ [[ "$1" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; }
 for _t in SUNRISE SUNSET; do
   _v="${!_t}"
-  _valid_time "$_v" || { echo "FAIL: $_t='$_v' in $UCFG/switch.conf is not HH:MM (00:00-23:59)" >&2; exit 1; }
+  _valid_time "$_v" || { echo "FAIL: $_t='$_v' in $CONF is not HH:MM (00:00-23:59)" >&2; exit 1; }
 done
 _su="${SUNRISE//:/}"; _ss="${SUNSET//:/}"
 [ "$_su" -lt "$_ss" ] || { echo "FAIL: SUNRISE ($SUNRISE) must be earlier than SUNSET ($SUNSET)" >&2; exit 1; }
@@ -45,7 +55,7 @@ _su="${SUNRISE//:/}"; _ss="${SUNSET//:/}"
 # schedule nor does what they asked, and nothing in the log to explain why.
 case "$OVERRIDE" in
   ""|light|dark) ;;
-  *) echo "FAIL: OVERRIDE='$OVERRIDE' in $UCFG/switch.conf must be empty, light or dark" >&2; exit 1 ;;
+  *) echo "FAIL: OVERRIDE='$OVERRIDE' in $CONF must be empty, light or dark" >&2; exit 1 ;;
 esac
 
 LOGDIR="$UCFG"
@@ -69,6 +79,24 @@ set_override() { # set_override <""|light|dark>
   grep -v '^OVERRIDE=' "$UCFG/switch.conf" > "$tmp" || true
   printf 'OVERRIDE=%s\n' "$v" >> "$tmp"
   mv -f "$tmp" "$UCFG/switch.conf"
+}
+
+# Move the pre-rename config and log into the new namespace without clobbering
+# anything already there. Called from --install only: the read-only actions must
+# keep working before the user decides to upgrade.
+migrate_legacy_config() {
+  [ -d "$LEGACY_UCFG" ] || return 0
+  mkdir -p "$UCFG"
+  local f
+  for f in switch.conf switch.log; do
+    if [ -e "$LEGACY_UCFG/$f" ] && [ ! -e "$UCFG/$f" ]; then
+      mv "$LEGACY_UCFG/$f" "$UCFG/$f"
+    fi
+  done
+  rmdir "$LEGACY_UCFG" 2>/dev/null || {
+    echo "note: legacy config left at $LEGACY_UCFG (new config already exists)"
+    return 0
+  }
 }
 
 override_label() { [ -n "$OVERRIDE" ] && echo "$OVERRIDE" || echo none; }
@@ -162,12 +190,17 @@ case "${1:---auto}" in
     echo "next timer tick (within 15 min) will apply $(desired_mode)"
     ;;
   --install)
+    migrate_legacy_config
     mkdir -p "$UCFG" "$HOME/.config/systemd/user"
+    # Retire the pre-rename units before installing the new pair, so a renamed
+    # checkout cannot leave the old timer firing alongside the new one.
+    systemctl --user disable --now "$LEGACY_TIM" 2>/dev/null || true
+    rm -f "$HOME/.config/systemd/user/$LEGACY_SVC" "$HOME/.config/systemd/user/$LEGACY_TIM"
     [ -f "$UCFG/switch.conf" ] && echo "kept $UCFG/switch.conf" \
       || { printf 'SUNRISE=%s\nSUNSET=%s\nOVERRIDE=\n' "$SUNRISE" "$SUNSET" > "$UCFG/switch.conf"; echo "wrote $UCFG/switch.conf"; }
     cat > "$HOME/.config/systemd/user/$SVC" <<EOF
 [Unit]
-Description=kde-macos dark/light switcher
+Description=spectre-kde dark/light switcher
 After=plasma-plasmashell.service
 
 [Service]
@@ -194,7 +227,9 @@ EOF
     ;;
   --uninstall)
     systemctl --user disable --now "$TIM" 2>/dev/null || true
-    rm -f "$HOME/.config/systemd/user/$SVC" "$HOME/.config/systemd/user/$TIM"
+    systemctl --user disable --now "$LEGACY_TIM" 2>/dev/null || true
+    rm -f "$HOME/.config/systemd/user/$SVC" "$HOME/.config/systemd/user/$TIM" \
+          "$HOME/.config/systemd/user/$LEGACY_SVC" "$HOME/.config/systemd/user/$LEGACY_TIM"
     systemctl --user daemon-reload
     echo "uninstalled: $TIM"
     ;;

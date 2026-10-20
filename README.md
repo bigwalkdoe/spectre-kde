@@ -323,8 +323,10 @@ maximized windows, and video fullscreen.
 `switch.sh` flips the theme on a daily schedule using a systemd **user** timer —
 no cron, no root:
 
-- `./switch.sh --install`  — creates `kde-macos-switch.{service,timer}` under
-  `~/.config/systemd/user/` and enables it. The timer fires 2 min after login,
+- `./switch.sh --install`  — creates `spectre-kde-switch.{service,timer}` under
+  `~/.config/systemd/user/` and enables it. Re-running it after an upgrade
+  migrates `~/.config/kde-macos/` and removes the old `kde-macos-switch.*`
+  units, so no stale timer keeps firing. The timer fires 2 min after login,
   then every 15 min; the service runs `switch.sh --auto`, which only applies when
   the clock has actually crossed a boundary (so it is a no-op otherwise).
 - `./switch.sh --check` — prints desired vs current mode without changing anything,
@@ -333,7 +335,7 @@ no cron, no root:
   It defers (and retries on the next 15 min tick) while the session is **locked**,
   since restarting plasmashell on an unattended screen is disruptive.
 - Times default to sunrise/sunset (`06:30` / `19:30`). Override per machine in
-  `~/.config/kde-macos/switch.conf`:
+  `~/.config/spectre-kde/switch.conf`:
   `SUNRISE=07:00` / `SUNSET=20:00`. The file is sourced, so it is validated on
   every run: values must be `HH:MM` and sunrise must precede sunset, otherwise
   the script exits with a clear error instead of silently failing forever.
@@ -342,7 +344,7 @@ no cron, no root:
 - `./switch.sh --follow-schedule` — clears the pin and hands control back to the
   timer, which settles on the scheduled mode within 15 min.
 - `./switch.sh --uninstall` — disables the timer and removes the unit files.
-- Timer-driven decisions are appended to `~/.config/kde-macos/switch.log`, so a
+- Timer-driven decisions are appended to `~/.config/spectre-kde/switch.log`, so a
   switch that happened while you were away is still auditable.
 
 Note: the schedule drives `apply.sh`, which already guarantees icons/cursor stay

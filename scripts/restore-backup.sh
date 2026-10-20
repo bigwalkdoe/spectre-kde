@@ -46,7 +46,7 @@ start_shell() {
   systemctl --user reset-failed plasma-plasmashell.service 2>/dev/null || true
   if ! systemctl --user is-active plasma-plasmashell.service >/dev/null 2>&1; then
     systemctl --user start plasma-plasmashell.service 2>/dev/null \
-      || { ( setsid nohup plasmashell >"$HOME/.local/share/plasmashell-kde-macos.log" 2>&1 & ) || return 1; }
+      || { ( setsid nohup plasmashell >"$HOME/.local/share/plasmashell-spectre-kde.log" 2>&1 & ) || return 1; }
   fi
   wait_shell_up
 }
