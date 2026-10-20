@@ -41,10 +41,16 @@ fi
 command -v btrfs >/dev/null || die "btrfs-progs not installed (Fedora: sudo dnf install btrfs-progs)"
 
 # Collect the btrfs mounts. / and /home are usually the same filesystem, so
-# de-duplicate by the device backing them rather than by mountpoint.
+# de-duplicate by the device backing them rather than by mountpoint -- scrubbing
+# each mount re-reads the whole filesystem, which wastes minutes on shared
+# mounts. findmnt prints SOURCE TARGET pairs; we keep one mount per device and
+# scrub each device once.
 say "btrfs mounts"
-MOUNTS="$(findmnt -rn -t btrfs -o TARGET 2>/dev/null | sort -u || true)"
-[ -n "$MOUNTS" ] || die "no btrfs mount found; nothing to scrub"
+PAIRS="$(findmnt -rn -t btrfs -o SOURCE,TARGET 2>/dev/null | sort -u || true)"
+[ -n "$PAIRS" ] || die "no btrfs mount found; nothing to scrub"
+# One target per source; dedupe by source, keep its mountpoint.
+UNIQ="$(printf '%s\n' "$PAIRS" | sort -u -k1,1 | awk '{print $2}')"
+MOUNTS="$UNIQ"
 printf '  %s\n' $MOUNTS
 
 FAULT=0
@@ -63,12 +69,12 @@ fi
 
 # The verdict lives in "scrub status", not in the scrub output above.
 #
-# Parse the --raw form, which is stable machine-readable JSON with underscored
-# keys, rather than the human -d form. The human form is what bit this script
-# before: it prints "Read errors:", "Csum errors:", "Verify errors:" with
-# SPACES, so a pattern written for underscored keys silently matches nothing --
-# which made a broken parse indistinguishable from a clean disk, and would have
-# reported PASS on a genuinely faulty drive.
+# btrfs has two "raw" modes and they are not interchangeable: --raw only
+# prints byte counts without a unit suffix, while -R prints the per-counter
+# statistics. The script originally used --raw and expected JSON, which btrfs
+# does not emit; its summary has no counters at all, so every clean scrub was
+# reported as an unverified fault. -R prints tab-indented "key: value" lines,
+# which is the format parsed below.
 #
 # Rule enforced below: never conclude "clean" from an absence of data. If the
 # output cannot be parsed, that is reported as unknown, not as a pass.
@@ -77,26 +83,27 @@ for m in $MOUNTS; do
     printf '  %-24s %s\n' "$m" "(skipped: --dry-run)"
     continue
   fi
-  raw="$(btrfs scrub status --raw "$m" 2>/dev/null || true)"
+  raw="$(btrfs scrub status -R "$m" 2>/dev/null || true)"
   pretty="$(btrfs scrub status -d "$m" 2>/dev/null | sed -n '1,4p' | tr '\n' ' ' || true)"
   printf '  %-24s %s\n' "$m" "${pretty:-no scrub on record}"
 
-  if ! printf '%s' "$raw" | grep -q 'device_stats'; then
+  if ! printf '%s' "$raw" | grep -qE '^[[:space:]]*read_errors:'; then
     # No scrub has ever run, or the format is not what we expect. Either way
     # there is no evidence of health -- say so instead of implying all is well.
     FAULT=1
     echo "    FAIL: could not read scrub counters for $m."
     echo "          No scrub appears to be on record, or 'btrfs scrub status"
-    echo "          --raw' returned something unexpected, so the data has not"
+    echo "          -R' returned something unexpected, so the data has not"
     echo "          been verified at all. Raw output was:"
     printf '%s\n' "$raw" | sed 's/^/            /' | head -5
     continue
   fi
 
-  # Pull every "<key>":<number> pair out of device_stats. Count how many we
-  # recognised so an empty result cannot masquerade as "all zero".
-  pairs="$(printf '%s' "$raw" | grep -oE '"[a-z_]+":[[:space:]]*[0-9]+' \
-           | sed 's/"//g; s/:[[:space:]]*/ /' || true)"
+  # Pull every tab-indented "key: value" counter out of the -R output. Count
+  # how many we recognised so an empty result cannot masquerade as "all zero".
+  pairs="$(printf '%s' "$raw" \
+           | sed -n 's/^[[:space:]]*\([a-z_][a-z_]*\):[[:space:]]*\([0-9][0-9]*\)$/\1 \2/p' \
+           || true)"
   nseen="$(printf '%s' "$pairs" | grep -c . || true)"
   if [ "$nseen" -eq 0 ]; then
     FAULT=1
@@ -106,7 +113,7 @@ for m in $MOUNTS; do
   fi
 
   # Every counter except the csum/read informational ones is a fault if non-zero.
-  # "no_csums" counts extents simply lacking a checksum, which is normal, so it
+  # "no_csum" counts extents simply lacking a checksum, which is normal, so it
   # is reported but not treated as damage.
   # ($2+0) so a missing or malformed value counts as zero rather than as a
   # non-zero "error" -- the nseen guard above already proves fields were found.
@@ -116,7 +123,7 @@ for m in $MOUNTS; do
     echo "    FAIL: scrub reported errors on $m:"
     printf '%s\n' "$bad" | sed 's/^/      /'
   else
-    nocsum="$(printf '%s' "$pairs" | awk '$1 == "no_csums" {print $2}')"
+    nocsum="$(printf '%s' "$pairs" | awk '$1 == "no_csum" {print $2}')"
     echo "    PASS: all $nseen scrub counters zero on $m (data re-read and re-checksummed)"
     [ -n "${nocsum:-}" ] && [ "$nocsum" != 0 ] \
       && echo "          ($nocsum extents have no checksum; normal, not damage)"

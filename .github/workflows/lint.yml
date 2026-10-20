@@ -57,3 +57,15 @@ jobs:
       # resolves deterministically and no Plasma session is needed.
       - name: run test-switch.sh
         run: timeout 120 bash scripts/test-switch.sh
+
+  test-check-storage:
+    name: check-storage.sh scrub parsing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The real scrub needs root and a btrfs filesystem, neither of which a
+      # runner has. The test stubs btrfs / findmnt / id / journalctl ahead of
+      # PATH so the parser runs against real btrfs output without either.
+      - name: run test-check-storage.sh
+        run: timeout 300 bash scripts/test-check-storage.sh
