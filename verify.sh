@@ -157,7 +157,9 @@ CHK "auto theme switching on idle off" "false" "$(q kdeglobals KDE AutomaticLook
 # because it answers the same question from the other side - why the theme is
 # not moving - and grepped rather than sourced, so an unvalidated switch.conf
 # cannot run code from here.
-OVR="$(grep -m1 '^OVERRIDE=' "$HOME/.config/kde-macos/switch.conf" 2>/dev/null | cut -d= -f2-)"
+OVR_FILE="$HOME/.config/spectre-kde/switch.conf"
+[ -f "$OVR_FILE" ] || OVR_FILE="$HOME/.config/kde-macos/switch.conf"
+OVR="$(grep -m1 '^OVERRIDE=' "$OVR_FILE" 2>/dev/null | cut -d= -f2-)"
 if [ -n "$OVR" ]; then
   echo "INFO  switch.sh override pinned to '$OVR' - schedule paused until ./switch.sh --follow-schedule"
 fi

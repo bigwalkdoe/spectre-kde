@@ -20,8 +20,8 @@ fails=0
 ok(){ printf 'ok   %s\n' "$1"; }
 no(){ printf 'FAIL %s\n       %s\n' "$1" "$2"; fails=$((fails + 1)); }
 
-REPO="$WORK/repo"; HOME_DIR="$WORK/home"; CONF="$HOME_DIR/.config/kde-macos/switch.conf"
-mkdir -p "$REPO" "$HOME_DIR/.config/kde-macos"
+REPO="$WORK/repo"; HOME_DIR="$WORK/home"; CONF="$HOME_DIR/.config/spectre-kde/switch.conf"
+mkdir -p "$REPO" "$HOME_DIR/.config/spectre-kde"
 ln -s "$ROOT/switch.sh" "$REPO/switch.sh"
 
 # Stubs. kreadconfig6 reports the currently applied icon theme, which is how
@@ -47,7 +47,15 @@ cat > "$REPO/apply.sh" <<'EOF'
 echo "STUB-APPLY $1"
 exit 0
 EOF
-chmod +x "$BIN/kreadconfig6" "$BIN/date" "$REPO/apply.sh"
+# --install talks to systemd. Record calls instead of touching the real user
+# manager; the test only cares that the old timer is removed and the new one is
+# enabled.
+SYSLOG="$WORK/systemctl.log"
+cat > "$BIN/systemctl" <<EOF
+#!/bin/sh
+printf '%s\n' "\$*" >> "$SYSLOG"
+EOF
+chmod +x "$BIN/kreadconfig6" "$BIN/date" "$BIN/systemctl" "$REPO/apply.sh"
 
 # write_conf <lines...>: seed switch.conf. Passing nothing removes it, which is
 # how "a machine that never ran --install" is set up.
@@ -67,6 +75,8 @@ $OUT"; }
 # conf_has/conf_lacks: assert on what the run left behind in switch.conf.
 conf_has(){ grep -q "^$1" "$CONF" && ok "$2" || no "$2" "switch.conf lacks: $1"; }
 conf_lacks(){ grep -q "^$1" "$CONF" && no "$2" "switch.conf still has: $1" || ok "$2"; }
+file_exists(){ [ -e "$1" ] && ok "$2" || no "$2" "missing: $1"; }
+file_absent(){ [ ! -e "$1" ] && ok "$2" || no "$2" "still exists: $1"; }
 
 echo "=== test-switch: manual override of the schedule ==="
 
@@ -141,6 +151,50 @@ run --light
 conf_has "OVERRIDE=light" "--light pins the mode when switch.conf does not exist yet"
 conf_has "SUNRISE=" "--light creates switch.conf with a sunrise default"
 conf_has "SUNSET=" "--light creates switch.conf with a sunset default"
+
+# --- upgrading from the old config namespace ---------------------------------
+#
+# The project used to keep its schedule in ~/.config/kde-macos. An upgrade must
+# keep reading that file until --install migrates it: ignoring it would silently
+# reset a hand-edited schedule and drop an active pin.
+LEGACY="$HOME_DIR/.config/kde-macos"; LEGACY_CONF="$LEGACY/switch.conf"
+mkdir -p "$LEGACY"
+printf '%s\n' "${SCHEDULE[@]}" "OVERRIDE=dark" > "$LEGACY_CONF"
+rm -rf "$HOME_DIR/.config/spectre-kde"
+run --check
+has "override=dark" "--check reads a legacy switch.conf until --install migrates it"
+rm -rf "$LEGACY"
+mkdir -p "$HOME_DIR/.config/spectre-kde"
+
+# --- --install migrates the old namespace and units --------------------------
+#
+# Upgrading is the whole point of this rename: an existing install must keep its
+# schedule and log, drop the old timer, and end up on the new unit names. Doing
+# this only in the docs would leave the old timer firing forever.
+rm -rf "$LEGACY" "$HOME_DIR/.config/spectre-kde" "$HOME_DIR/.config/systemd/user"
+mkdir -p "$LEGACY" "$HOME_DIR/.config/systemd/user"
+printf '%s\n' "${SCHEDULE[@]}" "OVERRIDE=dark" > "$LEGACY/switch.conf"
+printf 'old log\n' > "$LEGACY/switch.log"
+: > "$HOME_DIR/.config/systemd/user/kde-macos-switch.service"
+: > "$HOME_DIR/.config/systemd/user/kde-macos-switch.timer"
+: > "$SYSLOG"
+run --install
+rc_is 0 "--install succeeds with a legacy install present"
+file_exists "$CONF" "--install migrates switch.conf to the new namespace"
+conf_has "SUNRISE=13:00" "migration preserves the hand-edited sunrise"
+conf_has "OVERRIDE=dark" "migration preserves the active pin"
+file_exists "$HOME_DIR/.config/spectre-kde/switch.log" "migration moves the switch log"
+file_absent "$LEGACY" "migration removes the empty legacy directory"
+file_exists "$HOME_DIR/.config/systemd/user/spectre-kde-switch.service" "--install writes the new service"
+file_exists "$HOME_DIR/.config/systemd/user/spectre-kde-switch.timer" "--install writes the new timer"
+file_absent "$HOME_DIR/.config/systemd/user/kde-macos-switch.service" "--install removes the legacy service"
+file_absent "$HOME_DIR/.config/systemd/user/kde-macos-switch.timer" "--install removes the legacy timer"
+grep -q "disable --now kde-macos-switch.timer" "$SYSLOG" \
+  && ok "--install disables the legacy timer" \
+  || no "--install disables the legacy timer" "systemctl calls: $(tr '\n' ';' < "$SYSLOG")"
+grep -q "enable --now spectre-kde-switch.timer" "$SYSLOG" \
+  && ok "--install enables the new timer" \
+  || no "--install enables the new timer" "systemctl calls: $(tr '\n' ';' < "$SYSLOG")"
 
 # --- a typo is loud, not silent ----------------------------------------------
 #
