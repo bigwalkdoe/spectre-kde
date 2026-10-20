@@ -70,7 +70,7 @@ a polished **macOS-inspired** workflow while staying 100% native to KDE Plasma.
 ## 3. Repository layout
 
 ```
-spectre-kde-config/
+spectre-kde/
 ├── README.md            this file
 ├── backup.sh            timestamped backup -> ~/.config/kde-backups/ (+ retention)
 ├── apply.sh             [--light|--dark] preflight -> backup -> apply -> verify
@@ -108,7 +108,7 @@ per machine and are *not* normalized.
 ## 4. Quick start
 
 ```bash
-cd ~/spectre-kde-config
+cd ~/spectre-kde
 ./detect.sh          # inventory (read-only)
 ./apply.sh           # apply the light look
 ./apply.sh --dark    # apply the dark look
