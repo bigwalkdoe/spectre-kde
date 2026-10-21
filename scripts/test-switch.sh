@@ -31,8 +31,18 @@ BIN="$WORK/bin"; mkdir -p "$BIN"
 cat > "$BIN/kreadconfig6" <<'EOF'
 #!/bin/sh
 case "$*" in
-  *"--group Icons"*)        echo "${ICON_THEME:-FairyWren_Light}" ;;
-  *LookAndFeelPackage*)    echo "com.github.vinceliuice.Orchis" ;;
+  *"--group Icons"*)
+    case "${CURRENT_MODE:-light}" in
+      dark) echo "FairyWren_Dark" ;;
+      *)    echo "FairyWren_Light" ;;
+    esac
+    ;;
+  *LookAndFeelPackage*)
+    case "${CURRENT_MODE:-light}" in
+      dark) echo "com.github.vinceliuice.Orchis-dark" ;;
+      *)    echo "com.github.vinceliuice.Orchis" ;;
+    esac
+    ;;
 esac
 EOF
 cat > "$BIN/date" <<'EOF'
@@ -104,11 +114,43 @@ run --auto
 has "STUB-APPLY --dark" "unpinned --auto still applies the scheduled mode"
 
 write_conf "${SCHEDULE[@]}" "OVERRIDE=dark"
+export CURRENT_MODE=dark
 run --auto
+unset CURRENT_MODE
 lacks "STUB-APPLY" "a pinned --auto does not apply over the pin"
-has "override=dark" "a pinned --auto says which pin is holding it"
+has "override=dark is pinned and already applied" "a pinned --auto says pin already active"
 has "follow-schedule" "a pinned --auto says how to clear the pin"
 rc_is 0 "a pinned --auto is a successful no-op, not a failure"
+
+# --- --auto re-applies the override when something else changed the mode -----
+#
+# If KDE's own autoswitcher or System Settings changed the theme away from the
+# user's pin, --auto should re-apply the override so the pin actually holds.
+
+# Pin dark, but stub reports light as current (something else switched it).
+write_conf "${SCHEDULE[@]}" "OVERRIDE=dark"
+export CURRENT_MODE=dark
+run --auto
+unset CURRENT_MODE
+lacks "STUB-APPLY" "--auto no-ops when override matches current mode"
+has "override=dark is pinned and already applied" "--auto reports pin already active"
+
+write_conf "${SCHEDULE[@]}" "OVERRIDE=dark"
+export CURRENT_MODE=light
+run --auto
+unset CURRENT_MODE
+has "STUB-APPLY --dark" "--auto re-applies dark override when current mode is light"
+has "override=dark is pinned but current mode is light" "--auto names the mismatch"
+has "re-applying override" "--auto says it is re-applying the override"
+rc_is 0 "--auto re-apply exits 0"
+
+# Same in reverse: pin light, current is dark.
+write_conf "${SCHEDULE[@]}" "OVERRIDE=light"
+export CURRENT_MODE=dark
+run --auto
+unset CURRENT_MODE
+has "STUB-APPLY --light" "--auto re-applies light override when current mode is dark"
+rc_is 0 "--auto re-apply to light exits 0"
 
 # --- setting and clearing the pin --------------------------------------------
 

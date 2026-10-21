@@ -161,8 +161,18 @@ case "${1:---auto}" in
     # entry point and it fires every 15 min, so a pin honoured after the apply
     # would simply be undone on the next tick.
     if [ -n "$OVERRIDE" ]; then
-      echo "override=$OVERRIDE is pinned; not switching (clear with: $0 --follow-schedule)"
-      log "override $OVERRIDE pinned: --auto is a no-op (clear with --follow-schedule)"
+      C="$(current_mode)"
+      if [ "$C" = "$OVERRIDE" ]; then
+        echo "override=$OVERRIDE is pinned and already applied; not switching (clear with: $0 --follow-schedule)"
+        log "override $OVERRIDE pinned and active: --auto is a no-op (clear with --follow-schedule)"
+        exit 0
+      fi
+      # Override is pinned but something else changed the mode (KDE's own
+      # autoswitcher, System Settings, etc.). Re-apply the user's pin so it
+      # actually holds instead of being silently overridden on the next tick.
+      echo "override=$OVERRIDE is pinned but current mode is $C - re-applying override (clear with: $0 --follow-schedule)"
+      log "override $OVERRIDE pinned: current mode is $C, re-applying override"
+      apply_mode "$OVERRIDE"
       exit 0
     fi
     D="$(desired_mode)"; C="$(current_mode)"
