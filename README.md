@@ -74,7 +74,6 @@ spectre-kde/
 ├── README.md            this file
 ├── backup.sh            timestamped backup -> ~/.config/kde-backups/ (+ retention)
 ├── apply.sh             [--light|--dark] preflight -> backup -> apply -> verify
-├── switch.sh            automatic dark/light switching (systemd user timer)
 ├── sync.sh              snapshot live config -> config/ (normalized, git-ready)
 ├── rollback.sh          restore the most recent backup
 ├── scripts/restore-backup.sh   the single restore implementation (shared)
@@ -116,11 +115,10 @@ cd ~/spectre-kde
 ./sync.sh            # snapshot current live config -> config/ (normalized)
 ./sync.sh --commit   # ...and commit it
 ./rollback.sh        # restore the most recent backup
-./switch.sh --install       # set up automatic dark/light switching
-./switch.sh --check         # print desired vs current mode
-./switch.sh --auto          # switch mode if the clock crossed a boundary
 
-# Dark/light switching is safe in any of these forms:
+# Theme is applied manually via ./apply.sh --light|--dark, or by choosing the
+# Global Theme in KDE System Settings. There is no automatic dark/light
+# switching: once you pick a theme it stays until you change it again.
 #   ./apply.sh --light | --dark   (run this repo; preferred)
 #   System Settings -> Global Theme -> Orchis / Orchis-dark
 #   lookandfeeltool -a com.github.vinceliuice.Orchis[-dark]
@@ -244,7 +242,7 @@ unpacked from the original Downloads zip — cannot be applied by mistake.
   genuinely missing/empty/duplicate slots get a fresh one. Desktop-scoped KWin
   rules (per-desktop wallpaper, noanimation, keep-above) are keyed on these
   UUIDs, so an earlier version that regenerated `Id_2..Id_4` on every apply
-  orphaned all of them and churned the config 2×/day via `switch.sh --auto`
+  orphaned all of them and churned the config on every re-apply
 - Effects: blur/fade/glide/scale/resize/maximize/minimize/overview on;
   wobbly windows, magic lamp, ball, cube off (GPU-heavy/legacy)
 - `org.kde.KWin.reconfigure` is called so settings apply without a restart
@@ -311,73 +309,12 @@ maximized windows, and video fullscreen.
   directories are ever pruned, so anything you put in that directory by hand is
   safe.
 - **Concurrency:** `apply.sh` holds `.apply.lock` (`flock`) for its whole run, so
-  the `switch.sh` timer landing on top of a manual apply exits instead of two
-  runs rewriting `kwinrc`/`plasmashellrc` and restarting plasmashell at once.
+  a second apply landing on top of a manual apply exits instead of two runs
+  rewriting `kwinrc`/`plasmashellrc` and restarting plasmashell at once.
 - **Preflight:** the theme assets (Orchis LNF, color scheme, FairyWren icons,
   Bibata cursor) are checked *before* anything is written, so a machine missing
   one fails immediately with a list of what to install rather than partway
   through the apply.
-
-## 9. Automatic dark/light switching (`./switch.sh`)
-
-`switch.sh` flips the theme on a daily schedule using a systemd **user** timer —
-no cron, no root:
-
-- `./switch.sh --install`  — creates `spectre-kde-switch.{service,timer}` under
-  `~/.config/systemd/user/` and enables it. Re-running it after an upgrade
-  migrates `~/.config/kde-macos/` and removes the old `kde-macos-switch.*`
-  units, so no stale timer keeps firing. The timer fires 2 min after login,
-  then every 15 min; the service runs `switch.sh --auto`, which only applies when
-  the clock has actually crossed a boundary (so it is a no-op otherwise).
-- `./switch.sh --check` — prints desired vs current mode without changing anything,
-  including the current `override=` state.
-- `./switch.sh --auto` — applies dark/light if it differs from the current mode.
-  It defers (and retries on the next 15 min tick) while the session is **locked**,
-  since restarting plasmashell on an unattended screen is disruptive.
-- Times default to sunrise/sunset (`06:30` / `19:30`). Override per machine in
-  `~/.config/spectre-kde/switch.conf`:
-  `SUNRISE=07:00` / `SUNSET=20:00`. The file is sourced, so it is validated on
-  every run: values must be `HH:MM` and sunrise must precede sunset, otherwise
-  the script exits with a clear error instead of silently failing forever.
-- `./switch.sh --light|--dark` — explicit manual switch (same as `apply.sh`).
-  It also **pins** the mode, so the timer leaves it alone.
-- `./switch.sh --follow-schedule` — clears the pin and hands control back to the
-  timer, which settles on the scheduled mode within 15 min.
-- `./switch.sh --uninstall` — disables the timer and removes the unit files.
-- Timer-driven decisions are appended to `~/.config/spectre-kde/switch.log`, so a
-  switch that happened while you were away is still auditable.
-
-Note: the schedule drives `apply.sh`, which already guarantees icons/cursor stay
-pinned (see scripts/patch-lnf.sh), so both automatic and manual switching behave
-identically.
-
-### Overriding the schedule by hand
-
-The timer fires every 15 minutes, so a manual switch used to be undone within the
-quarter hour. `--light`/`--dark` now records `OVERRIDE=light|dark` in
-`switch.conf` and `--auto` becomes a no-op until you clear it:
-
-```bash
-./switch.sh --dark              # go dark now, and stop the timer arguing
-./switch.sh --check             # -> desired=light current=dark override=dark
-./switch.sh --follow-schedule   # hand control back to the clock
-```
-
-- The pin is written to `switch.conf`, so it survives reboots and applies to the
-  timer exactly as it does to a manual run. The file is rewritten atomically and
-  only its `OVERRIDE=` line is touched, so hand-edited times and comments survive.
-- The pin is only recorded once the mode actually applied — a switch that failed
-  does not claim to have held.
-- `--auto` checks the pin *before* applying anything, so it can never fight it.
-- An unrecognised `OVERRIDE` value fails the run with a clear error, like a bad
-  `SUNRISE`: silently ignoring it would leave a switcher that neither follows the
-  schedule nor does what you asked.
-- Only `switch.sh` sets the pin. `./apply.sh --dark` deliberately does not — it is
-  the low-level applier, and letting it decide policy would mean a plain re-apply
-  could quietly disable your schedule. Use `./switch.sh --light|--dark` for a
-  switch you want to keep.
-- `verify.sh` reports a pinned override as `INFO` — it is a deliberate choice, not
-  drift, but it is also the answer to "why is my theme not changing?".
 
 ## 10. Known limitations
 
@@ -428,12 +365,6 @@ quarter hour. `--light`/`--dark` now records `OVERRIDE=light|dark` in
   close that. `verify.sh` keeps warning about the mismatches regardless: it
   reports what the kernel logged, and the log does not change because a scrub
   passed.
-- **No fullscreen detection for auto-switching.** `switch.sh --auto` skips a
-  switch while the session is locked, but it cannot tell whether you are in a
-  fullscreen window or a presentation — KWin's `queryWindowInfo` D-Bus call is
-  interactive (it asks you to click a window) and is not usable from a timer. A
-  switch while you are presenting will restart plasmashell. Use
-  `./switch.sh --light|--dark` manually if that matters to you.
 - **Containment ids are not normalized in `config/`.** `sync.sh` strips UUIDs and
   migration logs, but Plasma's numeric `[Containments][N]`/`[Applets][N]`
   indices are machine-generated, so a snapshot diff between two machines still

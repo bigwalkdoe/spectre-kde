@@ -152,19 +152,9 @@ CHK "look-and-feel is a supported mode" "yes" "$SUPPORTED"
 CHK "global theme package" "$EXP_LNF" "$(q kdeglobals KDE LookAndFeelPackage)"
 CHK "auto theme switching off" "false" "$(q kdeglobals KDE AutomaticLookAndFeel)"
 CHK "auto theme switching on idle off" "false" "$(q kdeglobals KDE AutomaticLookAndFeelOnIdle)"
-# switch.sh's own pin, reported rather than checked: holding a mode is a
-# deliberate choice, not drift. It lives next to the Plasma autoswitcher flags
-# because it answers the same question from the other side - why the theme is
-# not moving - and grepped rather than sourced, so an unvalidated switch.conf
-# cannot run code from here.
-OVR_FILE="$HOME/.config/spectre-kde/switch.conf"
-[ -f "$OVR_FILE" ] || OVR_FILE="$HOME/.config/kde-macos/switch.conf"
-OVR="$(grep -m1 '^OVERRIDE=' "$OVR_FILE" 2>/dev/null | cut -d= -f2-)"
-if [ -n "$OVR" ]; then
-  echo "INFO  switch.sh override pinned to '$OVR' - schedule paused until ./switch.sh --follow-schedule"
-fi
-# Pinning the defaults is what stops a re-enabled autoswitcher from snapping
-# back to the stock Breeze look-and-feels, so assert the pair, not just the flags.
+# Pinning the DefaultLight/DefaultDark look-and-feel pair is what stops a
+# re-enabled autoswitcher from snapping back to the stock Breeze themes, so
+# assert the pair, not just the AutomaticLookAndFeel flags.
 CHK "pinned light look-and-feel" "com.github.vinceliuice.Orchis" "$(q kdeglobals KDE DefaultLightLookAndFeel)"
 CHK "pinned dark look-and-feel"  "com.github.vinceliuice.Orchis-dark" "$(q kdeglobals KDE DefaultDarkLookAndFeel)"
 CHK "kwin decoration theme" "$EXP_DECO" "$(q kwinrc org.kde.kdecoration2 theme)"

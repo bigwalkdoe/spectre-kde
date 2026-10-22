@@ -78,9 +78,9 @@ for c in "${CRITICAL[@]}"; do
   fi
 done
 
-# Retention: switch.sh --auto can apply twice a day, so prune old directories
-# instead of letting ~/.config/kde-backups grow without bound. KEEP may be
-# overridden (KDE_BACKUP_KEEP); the newest KEEP timestamped backups survive.
+# Retention: prune old directories instead of letting ~/.config/kde-backups
+# grow without bound. KEEP may be overridden (KDE_BACKUP_KEEP); the newest
+# KEEP timestamped backups survive.
 # Only YYYYMMDD-HHMMSS directories are ever considered, so anything a human
 # put in that directory by hand is never a deletion candidate.
 KEEP="${KDE_BACKUP_KEEP:-20}"
