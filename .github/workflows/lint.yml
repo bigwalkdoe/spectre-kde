@@ -21,13 +21,13 @@ jobs:
       - name: shellcheck (all shell scripts, fail on warning or higher)
         run: |
           shellcheck -S warning \
-            apply.sh backup.sh detect.sh rollback.sh switch.sh sync.sh verify.sh \
+            apply.sh backup.sh detect.sh rollback.sh sync.sh verify.sh \
             scripts/*.sh
 
       - name: bash syntax check
         run: |
           bash -n \
-            apply.sh backup.sh detect.sh rollback.sh switch.sh sync.sh verify.sh \
+            apply.sh backup.sh detect.sh rollback.sh sync.sh verify.sh \
             scripts/*.sh
 
   test-verify:
@@ -44,19 +44,6 @@ jobs:
       # Bounded so a hung probe fails the job instead of stalling it.
       - name: run test-verify.sh
         run: timeout 300 bash scripts/test-verify.sh
-
-  test-switch:
-    name: switch.sh manual override
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # The override only matters when nobody is watching: --auto runs from a
-      # timer, so a pin that stops being honoured reverts silently 15 minutes
-      # later. These stub the clock, kreadconfig6 and apply.sh, so the schedule
-      # resolves deterministically and no Plasma session is needed.
-      - name: run test-switch.sh
-        run: timeout 120 bash scripts/test-switch.sh
 
   test-check-storage:
     name: check-storage.sh scrub parsing

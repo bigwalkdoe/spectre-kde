@@ -43,13 +43,13 @@ plasmashell --version | grep -q '^plasmashell 6\.' || die "unsupported Plasma ve
 busctl --user list --no-pager 2>/dev/null | grep -q org.kde.plasmashell || die "plasmashell not on the session bus"
 echo "Plasma: $(plasmashell --version)  Mode: $MODE"
 
-# Serialize applies. switch.sh --auto runs from a systemd timer every 15 min, so
-# a scheduled switch landing on top of a manual ./apply.sh would otherwise have
-# two runs rewriting kwinrc/plasmashellrc and restarting plasmashell at once.
+# Serialize applies: a second run landing on top of a manual ./apply.sh would
+# otherwise have two runs rewriting kwinrc/plasmashellrc and restarting
+# plasmashell at once.
 LOCK="$ROOT/.apply.lock"
 exec 9>"$LOCK" || die "cannot open lock file $LOCK"
 if ! flock -n 9; then
-  die "another apply.sh/switch.sh run holds $LOCK - refusing to run concurrently"
+  die "another apply run holds $LOCK - refusing to run concurrently"
 fi
 # Keep the lock for the lifetime of this script (fd 9 stays open).
 echo "Lock acquired: $LOCK"
@@ -85,7 +85,7 @@ case "$SFX" in
 esac
 OTHER_MODE="$( [ "$SFX" = dark ] && echo light || echo dark )"
 _has plasma/look-and-feel "$OTHER_PKG" >/dev/null 2>&1 \
-  || echo "note: $OTHER_PKG not installed - ./switch.sh cannot switch to $OTHER_MODE" >&2
+  || echo "note: $OTHER_PKG not installed - $OTHER_MODE theme unavailable" >&2
 _has color-schemes "$OTHER_COLORS.colors" >/dev/null 2>&1 \
   || echo "note: color scheme $OTHER_COLORS not installed - switching to $OTHER_MODE will fail" >&2
 _has icons "$OTHER_ICONS" >/dev/null 2>&1 \
@@ -199,8 +199,8 @@ kwriteconfig6 --file kwinrc --group Desktops --key Rows 1 || die "desktops rows"
 # fresh uuidgen for Id_2..Id_4 on every run, which was wrong twice over:
 #   * desktop-scoped KWin rules (per-desktop wallpaper, noanimation, keep-above)
 #     are keyed on the desktop UUID, so regenerating orphaned every one of them;
-#   * it made the apply non-idempotent, and switch.sh --auto runs apply.sh twice
-#     a day, so the UUIDs churned 48x/day and the config diff was pure noise.
+#   * it made the apply non-idempotent, and re-applying ran apply.sh twice
+#     a day, so the UUIDs churned and the config diff was pure noise.
 # So: reuse a non-empty, unique existing id, and only mint one for a slot that is
 # missing, empty, or already used by another desktop (which KWin would mis-bind).
 SEEN=""
