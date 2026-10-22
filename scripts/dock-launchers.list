@@ -16,3 +16,7 @@ org.kde.konsole.desktop                  # Terminal
 org.mozilla.firefox.desktop              # Web
 com.google.Chrome.desktop                # Web
 com.microsoft.VSCode.desktop|code.desktop # VS Code (the RPM ships the long id)
+md.obsidian.Obsidian.desktop             # Obsidian
+org.telegram.desktop.desktop             # Telegram (upstream id really ends in .desktop.desktop)
+com.spotify.Client.desktop               # Spotify
+binance.desktop                          # Binance

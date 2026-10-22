@@ -62,7 +62,7 @@ gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell \
   | sed -e "1s/^('//" -e "\$s/',)\$//" | tr '|' '\n' \
   | sed -e 's/^count=/panelCount=/' \
         -e 's/^\(top\|bottom\|left\|right\);h=/panel \1 h=/' \
-        -e 's/;float=/ floating=/' -e 's/;widgets=/ widgets=/' \
+        -e 's/;float=/ floating=/' -e 's/;widgets=/ widgets=/' -e 's/;pid=/ id=/' \
   || echo "(cannot reach plasmashell)"
 
 echo "=== gtk theme settings ==="

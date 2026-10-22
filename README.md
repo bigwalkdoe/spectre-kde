@@ -28,7 +28,7 @@ a polished **macOS-inspired** workflow while staying 100% native to KDE Plasma.
 | Area | Target |
 |---|---|
 | Top menu bar | `gridUnit × 10/6` (30 px at the default gridUnit 18), full-width, flush: global menu (left) · workspace pager (center) · system tray + clock (right) |
-| Dock | floating, centered, icon-only, `gridUnit × 26/9` (52 px at gridUnit 18), fit-to-content: Launcher · Dolphin · Konsole · Firefox · Chrome · VSCode · divider · Trash |
+| Dock | floating, centered, icon-only, `gridUnit × 26/9` (52 px at gridUnit 18), fit-to-content: Launcher · Dolphin · Konsole · Firefox · Chrome · VSCode · Obsidian · Telegram · Spotify · Binance · divider · Trash |
 | Desktop | clean "Desktop" containment — **no icons**, no folder clutter, wallpaper only |
 | Windows | Orchis aurorae decoration; borderless maximized windows; curated KWin effects (blur in, wobbly/cube/lamp out) |
 | Workspaces | 4 virtual desktops (1 row) with standard KDE shortcuts kept intact |
@@ -186,6 +186,10 @@ org.kde.konsole.desktop
 org.mozilla.firefox.desktop
 com.google.Chrome.desktop
 com.microsoft.VSCode.desktop|code.desktop
+md.obsidian.Obsidian.desktop
+org.telegram.desktop.desktop
+com.spotify.Client.desktop
+binance.desktop
 ```
 
 `apply.sh` resolves that list through `scripts/resolve-launchers.sh`, which keeps
@@ -375,7 +379,7 @@ maximized windows, and video fullscreen.
 ## 11. Verification checklist (`./verify.sh`)
 
 Desktop (clean containment, wallpaper, vendored asset present) · top bar and
-dock (global menu, tray, clock, pager, launcher, trash, floating,
+dock (global menu, tray, clock, pager, launcher, trash, floating, **centered**,
 fit-to-content) · exactly two panels · **panel visibility = dodge windows** ·
 kwin (aurorae.v2 decoration, 4 desktops, blur on, wobbly off) · theme (LNF,
 colors, icons, cursor, cursor size, font, splash resolution) · LNF defaults
