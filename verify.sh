@@ -124,6 +124,48 @@ else
   [ -z "$STALE" ] || echo "INFO  stale [PlasmaViews][Panel N] section(s) awaiting Plasma reap:$STALE"
 fi
 
+# ---- dock: centered + fit to content ---------------------------------------
+# layout.js sets dock.alignment = "center" and minimumLength/maximumLength = -1
+# on every apply, so this invariant has to hold by default. The scripting API
+# cannot be trusted for it (panel.minimumLength/maximumLength round-trip as the
+# wrapper defaults, and `alignment` reports "center" even for the full-width
+# top bar), so read the authoritative plasmashellrc keys for the live dock id -
+# the same pattern the panelVisibility check above uses.
+# alignment is stored as a Qt::Alignment int: bit 0x04 is AlignHCenter, so
+# 132 (0x84 = AlignHCenter|AlignVCenter, what Plasma writes for centered
+# panels) or any value with that bit set counts as centered.
+rc_panel(){ kreadconfig6 --file plasmashellrc --group PlasmaViews --group "Panel $1" --key "$2" 2>/dev/null || echo ""; }
+rc_default(){ kreadconfig6 --file plasmashellrc --group PlasmaViews --group "Panel $1" --group Defaults --key "$2" 2>/dev/null || echo ""; }
+# Some Plasma builds keep minLength/maxLength under [Defaults] (6.4+), older
+# ones directly under the panel group; accept either.
+rc_len(){ local v; v="$(rc_default "$1" "$2")"; [ -n "$v" ] && printf '%s\n' "$v" || rc_panel "$1" "$2"; }
+echo "--- dock: centered + fit to content ---"
+DOCK_PID="$(printf '%s\n' "$PROBE" | sed -n 's/^bottom;.*pid=\([0-9][0-9]*\)$/\1/p' | tail -1)"
+if [ -z "$DOCK_PID" ]; then
+  echo "FAIL  dock centered/fit  (probe reported no bottom panel with a pid)"
+  FAILED=$((FAILED+1))
+else
+  echo "  dock panel id: $DOCK_PID"
+  AL="$(rc_panel "$DOCK_PID" alignment)"
+  case "$AL" in
+    ''|*[^0-9]*) AL_FAIL=1 ;;
+    *) if [ $((AL & 4)) -eq 4 ]; then
+         echo "PASS  dock is centered (alignment=$AL, Qt::AlignHCenter set)"; AL_FAIL=0
+       else
+         echo "FAIL  dock is centered  (alignment=$AL lacks Qt::AlignHCenter bit)"; AL_FAIL=1
+       fi ;;
+  esac
+  [ "$AL_FAIL" -eq 0 ] || FAILED=$((FAILED+1))
+  MIN="$(rc_len "$DOCK_PID" minLength)"
+  MAX="$(rc_len "$DOCK_PID" maxLength)"
+  if [ "$MIN" = "-1" ] && [ "$MAX" = "-1" ]; then
+    echo "PASS  dock fits its contents (minLength=$MIN maxLength=$MAX)"
+  else
+    echo "FAIL  dock fits its contents  (expected minLength=-1 maxLength=-1, got '$MIN'/'$MAX')"
+    FAILED=$((FAILED+1))
+  fi
+fi
+
 echo "--- kwin ---"
 # Aurorae installs two decoration plugins side by side (org.kde.kwin.aurorae and
 # .v2), both loadable; the live session resolves the .v2 id, so that is what this
