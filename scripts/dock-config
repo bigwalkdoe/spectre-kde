@@ -1,0 +1,19 @@
+# spectre-kde dock configuration
+# Customize dock appearance and behavior
+# Values are read by layout.js
+
+# Dock position: bottom, left, right (top not recommended)
+DOCK_POSITION=bottom
+
+# Dock size (height in grid units multiplier)
+# Default: 26/9 ≈ 52px at gridUnit 18
+DOCK_HEIGHT_MULTIPLIER=26/9
+
+# Dock style
+DOCK_FLOATING=true
+DOCK_CENTERED=true
+DOCK_FIT_TO_CONTENT=true
+
+# Show task manager labels (false = icons only, like macOS)
+DOCK_SHOW_LABELS=false
+DOCK_ICONS_ONLY=true

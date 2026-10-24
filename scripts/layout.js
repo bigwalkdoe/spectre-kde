@@ -45,14 +45,34 @@ topPanel.addWidget("org.kde.plasma.systemtray");    // network / bluetooth / aud
 topPanel.addWidget("org.kde.plasma.digitalclock");
 log.push("top bar ok (" + topPanel.location + ", h=" + topPanel.height + ")");
 
-// ---- Phase 3: BOTTOM DOCK (macOS dock analog) ----
-// Floating, centered, compact, fit-to-content. Launcher | apps | divider | Trash.
+// ---- Phase 3: DOCK (macOS dock analog) ----
+// Configurable via dock-config. Defaults to bottom floating centered dock.
 var dock = new Panel;
-dock.location = "bottom";
-dock.height = Math.round(gridUnit * 26 / 9);        // = 52 px at gridUnit 18
-dock.floating = true;                               // floating visual (rounded, margins)
+// Try to read dock config from environment if set by apply.sh
+var dockPos = "@DOCK_POSITION@";
+if (dockPos.indexOf("@") !== -1) dockPos = "bottom";
+var dockHeightMult = "@DOCK_HEIGHT_MULTIPLIER@";
+if (dockHeightMult.indexOf("@") !== -1) dockHeightMult = "26/9";
+var dockFloat = "@DOCK_FLOATING@";
+if (dockFloat.indexOf("@") !== -1) dockFloat = "true";
+var dockCenter = "@DOCK_CENTERED@";
+if (dockCenter.indexOf("@") !== -1) dockCenter = "true";
+
+dock.location = dockPos;
+try {
+    // Evaluate multiplier
+    var multParts = dockHeightMult.split("/");
+    if (multParts.length == 2) {
+        dock.height = Math.round(gridUnit * parseInt(multParts[0]) / parseInt(multParts[1]));
+    } else {
+        dock.height = Math.round(gridUnit * parseFloat(dockHeightMult));
+    }
+} catch(e) {
+    dock.height = Math.round(gridUnit * 26 / 9);        // fallback = 52 px at gridUnit 18
+}
+dock.floating = (dockFloat === "true");                               // floating visual (rounded, margins)
 dock.offset = 0;                                    // visibility set by apply.sh, see above
-dock.alignment = "center";                          // centered on the screen
+dock.alignment = (dockCenter === "true") ? "center" : "left";                          // centered on the screen
 dock.minimumLength = -1;                            // "fit content" (shrinks to the icons)
 dock.maximumLength = -1;
 
