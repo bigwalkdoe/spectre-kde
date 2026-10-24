@@ -362,6 +362,14 @@ shutdown_shell graceful || die "could not stop plasmashell"
 start_shell || die "plasmashell did not come back"
 
 say "Applying panel layout (scripts/layout.js)"
+# Load dock configuration
+DOCK_CFG="$ROOT/scripts/dock-config"
+[ -f "$DOCK_CFG" ] && . "$DOCK_CFG" || true
+DOCK_POSITION="${DOCK_POSITION:-bottom}"
+DOCK_HEIGHT_MULTIPLIER="${DOCK_HEIGHT_MULTIPLIER:-26/9}"
+DOCK_FLOATING="${DOCK_FLOATING:-true}"
+DOCK_CENTERED="${DOCK_CENTERED:-true}"
+
 # Resolve the pinned dock launchers first and inject them into layout.js. The
 # launcher ids used to be hardcoded in layout.js, which meant an app that is not
 # installed became a generic "Unknown application" tile - and unpinning it by hand
@@ -373,7 +381,12 @@ DOCK_LAUNCHERS="$(bash "$ROOT/scripts/resolve-launchers.sh" "$ROOT/scripts/dock-
 case "$DOCK_LAUNCHERS" in
   *[!A-Za-z0-9.,:_-]*) die "resolved launcher list has unexpected characters" ;;
 esac
-LAYOUT_JS="$(sed "s|@DOCK_LAUNCHERS@|$DOCK_LAUNCHERS|g" "$ROOT/scripts/layout.js")" \
+LAYOUT_JS="$(sed -e "s|@DOCK_LAUNCHERS@|$DOCK_LAUNCHERS|g" \
+                  -e "s|@DOCK_POSITION@|$DOCK_POSITION|g" \
+                  -e "s|@DOCK_HEIGHT_MULTIPLIER@|$DOCK_HEIGHT_MULTIPLIER|g" \
+                  -e "s|@DOCK_FLOATING@|$DOCK_FLOATING|g" \
+                  -e "s|@DOCK_CENTERED@|$DOCK_CENTERED|g" \
+                  "$ROOT/scripts/layout.js")" \
   || die "could not render layout.js"
 # Guard the substitution explicitly: without this, an unresolved token would make
 # layout.js leave the dock untouched and the apply would still report success.

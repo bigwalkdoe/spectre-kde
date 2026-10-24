@@ -2,3 +2,4 @@
 .applied-*
 # apply.sh concurrency lock
 .apply.lock
+profiles/
