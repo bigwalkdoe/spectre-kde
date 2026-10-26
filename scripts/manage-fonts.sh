@@ -5,7 +5,6 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FONTCONFIG_DIR="$HOME/.config/fontconfig"
 FONTS_CONF="$FONTCONFIG_DIR/fonts.conf"
 

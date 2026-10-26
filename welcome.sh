@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034
 # spectre-kde -- welcome.sh
 # Getting started guide
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"
 
-BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034
 # spectre-kde -- commands.sh
 # Quick reference of all available commands
 

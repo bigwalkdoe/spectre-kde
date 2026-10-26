@@ -79,7 +79,7 @@ show_menu() {
     echo ""
     echo -e "${RED}0)${NC} Exit"
     echo ""
-    echo -n "Enter your choice [0-24]: "
+    echo -n "Enter your choice [0-25]: "
 }
 
 apply_menu() {
@@ -652,7 +652,7 @@ while true; do
     show_status
     show_menu
     read -r choice
-    case $choice in
+            case $choice in
         1)
             apply_menu
             ;;
@@ -700,58 +700,58 @@ while true; do
         10)
             autostart_menu
             ;;
-        10)
+        11)
             dock_config_menu
             ;;
-        11)
+        12)
             topbar_config_menu
             ;;
-        12)
+        13)
             kwin_rules_menu
             ;;
-        13)
+        14)
             nightlight_menu
             ;;
-        14)
+        15)
             fonts_menu
             ;;
-        15)
+        16)
             notifications_menu
             ;;
-        16)
+        17)
             echo ""
             "$ROOT/quick-update.sh"
             echo ""
             read -p "Press Enter to continue..."
             ;;
-        17)
+        18)
             echo ""
             echo -e "${YELLOW}Creating backup...${NC}"
             "$ROOT/backup.sh"
             echo ""
             read -p "Press Enter to continue..."
             ;;
-        18)
+        19)
             echo ""
             echo -e "${YELLOW}Rolling back...${NC}"
             "$ROOT/rollback.sh"
             echo ""
             read -p "Press Enter to continue..."
             ;;
-        19)
+        20)
             echo ""
             echo -e "${YELLOW}Syncing current config...${NC}"
             "$ROOT/sync.sh"
             echo ""
             read -p "Press Enter to continue..."
             ;;
-        20)
+        21)
             echo ""
             "$ROOT/detect.sh"
             echo ""
             read -p "Press Enter to continue..."
             ;;
-        21)
+        22)
             echo ""
             echo -n "Enter profile name: "
             read -r pname
@@ -764,7 +764,7 @@ while true; do
             echo ""
             read -p "Press Enter to continue..."
             ;;
-        22)
+        23)
             echo ""
             echo -e "${BOLD}Available profiles:${NC}"
             ls -1 "$ROOT/profiles/" 2>/dev/null || echo "  (none)"
@@ -780,13 +780,13 @@ while true; do
             echo ""
             read -p "Press Enter to continue..."
             ;;
-        23)
+        24)
             echo ""
             "$ROOT/install-deps.sh"
             echo ""
             read -p "Press Enter to continue..."
             ;;
-        24)
+        25)
             echo ""
             "$ROOT/reset.sh"
             echo ""

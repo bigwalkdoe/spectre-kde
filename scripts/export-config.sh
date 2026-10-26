@@ -5,7 +5,6 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CFG="$HOME/.config"
 OUTDIR="${1:-$HOME}"
 TS=$(date +%Y%m%d-%H%M%S)
