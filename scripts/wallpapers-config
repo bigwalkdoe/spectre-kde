@@ -1,0 +1,19 @@
+# spectre-kde -- wallpapers-config
+# Per-monitor wallpaper assignments (macOS-style: different wallpaper per screen)
+# Format: WALLPAPER_<screen>=<wallpaper-name-or-path>
+# A screen number starting at 1 = primary/first screen; higher numbers are
+# additional screens. An empty value clears that screen's override so it falls
+# back to the default wallpaper (WAVY default).
+#
+# Default: the single wavy_lines_v02_5120x2880.png on every screen.
+
+WALLPAPER_1="wavy_lines_v02_5120x2880.png"
+WALLPAPER_2=""
+WALLPAPER_3=""
+WALLPAPER_4=""
+WALLPAPER_5=""
+WALLPAPER_6=""
+WALLPAPER_7=""
+WALLPAPER_8=""
+WALLPAPER_9=""
+WALLPAPER_10=""
