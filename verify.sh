@@ -248,6 +248,24 @@ CHK "wobbly windows off" "false" "$(q kwinrc Plugins wobblywindowsEnabled)"
 CHK "blur on" "true" "$(q kwinrc Plugins blurEnabled)"
 CHK "borderless maximized (macOS-like)" "true" "$(q kwinrc General BorderlessMaximizedWindows)"
 
+echo "--- kwin window rules ---"
+# Declarative rules from config/applied-kwinrulesrc.conf. Verify the file is
+# present and that the key rule sections made it into the live config.
+KWIN_RULES="$CFG/kwinrulesrc"
+if [ -f "$KWIN_RULES" ]; then
+  CHK "kwinrulesrc present" "yes" "yes"
+  for rule in "Konsole - borderless" "Firefox - desktop 2" "Spotify - keep above"; do
+    if grep -q "^\[${rule}\]" "$KWIN_RULES" 2>/dev/null; then
+      CHK "window rule: $rule" "present" "present"
+    else
+      CHK "window rule: $rule" "present" "absent"
+    fi
+  done
+else
+  CHK "kwinrulesrc present" "yes" "no"
+  echo "  WARN  ~/.config/kwinrulesrc missing - run ./apply.sh to install window rules"
+fi
+
 echo "--- theme ---"
 # Determine the active mode from the look-and-feel actually in use; both the
 # light (Orchis) and dark (Orchis-dark) variants must be independently verified.

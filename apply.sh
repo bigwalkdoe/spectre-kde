@@ -10,21 +10,56 @@ set -u
 ROOT="$(cd "$(dirname "$0")" && pwd)" && cd "$ROOT" || exit 1
 
 QUICK=0
+DRYRUN=0
+VALIDATE=0
 MODE=""
 for arg in "$@"; do
   case "$arg" in
     --quick) QUICK=1 ;;
+    --dry-run) DRYRUN=1 ;;
+    --validate) VALIDATE=1 ;;
     --light|--dark) MODE="$arg" ;;
-    *) echo "usage: $0 [--light|--dark] [--quick]"; exit 2 ;;
+    *) echo "usage: $0 [--light|--dark] [--quick] [--dry-run] [--validate]"; exit 2 ;;
   esac
 done
 MODE="${MODE:---light}"
 case "$MODE" in
   --light) LNF=Orchis; LNF_PKG="com.github.vinceliuice.Orchis";       COLORS=Orchis;      ICONS=FairyWren_Light; CURSOR=Bibata-Modern-Ice; SFX="light" ;;
   --dark)  LNF=Orchis-dark; LNF_PKG="com.github.vinceliuice.Orchis-dark"; COLORS=OrchisDark;  ICONS=FairyWren_Dark;  CURSOR=Bibata-Modern-Ice; SFX="dark" ;;
-  *) echo "usage: $0 [--light|--dark] [--quick]"; exit 2 ;;
+  *) echo "usage: $0 [--light|--dark] [--quick] [--dry-run] [--validate]"; exit 2 ;;
 esac
 [ "$QUICK" -eq 1 ] && echo "Quick mode enabled - some optimizations will be applied"
+
+if [ "$VALIDATE" -eq 1 ]; then
+  echo "Running preflight validation..."
+  exec bash "$ROOT/scripts/preflight-check.sh" "$MODE"
+fi
+
+if [ "$DRYRUN" -eq 1 ]; then
+  echo "=== DRY RUN MODE - No changes will be made ==="
+  echo ""
+  echo "This would apply the following:"
+  echo "  1. Create timestamped backup in ~/.config/kde-backups/"
+  echo "  2. Apply look-and-feel ($LNF_PKG) with patched LNF defaults"
+  echo "  3. Apply colors ($COLORS), icons ($ICONS), cursor ($CURSOR)"
+  echo "  4. Configure KWin (aurorae.v2 decoration, effects, 4 desktops)"
+  echo "  5. Install KWin window rules from config/applied-kwinrulesrc.conf"
+  echo "  6. Configure GTK 3/4 themes"
+  echo "  7. Configure SDDM, autostart, baloo, power management, notifications"
+  echo "  8. Apply global shortcuts config"
+  echo "  9. Convert desktop to clean containment (no icons)"
+  echo " 10. Restart plasmashell"
+  echo " 11. Apply panel layout (top bar + dock) via Plasma scripting API"
+  echo " 12. Curate system tray"
+  echo " 13. Set panel visibility to dodge windows"
+  echo " 14. Install/set wallpaper"
+  echo " 15. Run verification (pass 1 + pass 2)"
+  echo ""
+  bash "$ROOT/scripts/preflight-check.sh" "$MODE" || true
+  echo ""
+  echo "=== END DRY RUN ==="
+  exit 0
+fi
 # Plasma panel visibility enum ([PlasmaViews][Panel N] panelVisibility):
 # 0=NormalPanel 1=AutoHide 2=DodgeWindows 3=WindowsGoBelow. 2 = macOS-style
 # (hidden until the mouse reaches the screen edge; fullscreen dodges the bar).
@@ -247,6 +282,15 @@ kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_ballEnabled false
 kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_kcubeEnabled false || die "fx cube off"
 busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure 2>/dev/null \
   || say "note: kwin reconfigure deferred to next login"
+
+say "KWin window rules (macOS-like placement)"
+# Declarative window rules from config/applied-kwinrulesrc.conf. Written after
+# the kwinrc decoration/workspace settings so both take effect together.
+# kwinrulesrc is already in backup.sh FILES and restore-backup.sh AFFECTED, so
+# the write is backed up before anything changes and fully reversible.
+cp "$ROOT/config/applied-kwinrulesrc.conf" "$HOME/.config/kwinrulesrc" \
+  || die "kwin rules config"
+echo "  KWin window rules installed from config/applied-kwinrulesrc.conf"
 
 say "GTK theme wiring ($SFX mode)"
 for g in gtk-3.0 gtk-4.0; do

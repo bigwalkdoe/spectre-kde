@@ -100,9 +100,11 @@ spectre-kde/
 │   ├── make-wallpaper.py       regenerates the vendored wallpaper (needs numpy+Pillow)
 │   ├── tray-config.js   system tray curation (pinned items + order)
 │   ├── manage-dock.sh   add/remove/find/list pinned dock apps
+│   ├── manage-kwin-rules.sh   add/remove/show/apply KWin window rules
 │   ├── manage-wallpaper.sh     list/set the desktop wallpaper
 │   ├── manage-autostart.sh     sync ~/.config/autostart/ to scripts/autostart.list
 │   ├── manage-nightlight.sh    Night Color (blue-light filter) on/off/schedule
+│   ├── manage-fonts.sh        install/list/exclude fonts, rebuild cache
 │   ├── toggle-theme.sh  switch light <-> dark from the current marker
 │   ├── export-profile.sh / import-profile.sh   save/restore a named config profile
 │   └── probe-panels.js  read-only panel/widget probe (detect.sh + verify.sh)
@@ -123,6 +125,8 @@ per machine and are *not* normalized.
 cd ~/spectre-kde
 ./detect.sh          # inventory (read-only)
 ./menu.sh            # interactive manager: apply, dock, wallpaper, backups, profiles
+./scripts/preflight-check.sh --light   # validate assets/tools/config before apply
+./apply.sh --dry-run --light           # show what would change (no modifications)
 ./apply.sh           # apply the light look
 ./apply.sh --dark    # apply the dark look
 ./apply.sh --light --quick   # skip the final restart + pass 2 (fast iteration)
@@ -304,6 +308,13 @@ unpacked from the original Downloads zip — cannot be applied by mistake.
   reconfigures KWin, so no logout is needed. Also reachable from `./menu.sh`.
   Not applied by `apply.sh`: a blue-light filter is a preference, not part of
   the look.
+- **Window rules** — `config/applied-kwinrulesrc.conf` holds declarative KWin
+  rules (wmclass, desktop, noblord, keepabove, etc.). `apply.sh` copies it to
+  `~/.config/kwinrulesrc` on every run, and `verify.sh` checks the key rule
+  sections are present. Manage rules with `scripts/manage-kwin-rules.sh
+  [list|add|remove|show|apply]` or from `./menu.sh`.
+  Default rules: borderless Konsole, Firefox/Chrome on desktop 2, Code/Obsidian
+  on desktop 3, Spotify and Telegram kept above.
 
 ### Multi-monitor behaviour
 - Nothing is hard-coded to a screen: panels are placed on the default (primary)
@@ -453,7 +464,7 @@ dock (global menu, tray, clock, pager — each SKIPped if `scripts/topbar-config
 turns it off — launcher, trash, floating, **centered**, fit-to-content) · exactly
 two panels · **panel visibility = dodge windows** · panel heights derived from the
 configured multipliers · kwin (aurorae.v2 decoration, 4 desktops, blur on, wobbly
-off) · theme (LNF, colors, icons, cursor, cursor size, font, splash resolution) ·
+off, window rules from config/applied-kwinrulesrc.conf) · theme (LNF, colors, icons, cursor, cursor size, font, splash resolution) ·
 LNF defaults pinned for cursor, icons and decoration id · the pinned
 `DefaultLight/DarkLookAndFeel` pair · **GTK 3 *and* 4** wiring · fontconfig
 rejectfont · **keyboard map read from KGlobalAccel's own component groups** ·
