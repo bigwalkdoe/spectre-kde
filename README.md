@@ -72,13 +72,18 @@ a polished **macOS-inspired** workflow while staying 100% native to KDE Plasma.
 ```
 spectre-kde/
 ├── README.md            this file
+├── menu.sh              interactive manager (everything below, in one menu)
 ├── backup.sh            timestamped backup -> ~/.config/kde-backups/ (+ retention)
-├── apply.sh             [--light|--dark] preflight -> backup -> apply -> verify
+├── apply.sh             [--light|--dark] [--quick] preflight -> backup -> apply -> verify
+├── quick-update.sh      re-apply dock/top bar/tray only (no theme switch, no restart)
 ├── sync.sh              snapshot live config -> config/ (normalized, git-ready)
 ├── rollback.sh          restore the most recent backup
+├── reset.sh             restore the repo's default dock/top-bar config
+├── install-deps.sh      install what can be installed for this distro
 ├── scripts/restore-backup.sh   the single restore implementation (shared)
 ├── detect.sh            non-destructive environment inventory
-├── verify.sh            PASS/FAIL verification (files + live session + health)
+├── doctor.sh            dependency/asset diagnosis with suggested fixes
+├── verify.sh            [--no-health] PASS/FAIL verification (files + live session + health)
 ├── assets/wallpapers/   vendored 5K wallpaper (generated; applied by apply.sh if missing or stale)
 ├── config/              diagnostic snapshots of the live config (see below)
 ├── .github/workflows/   CI: shellcheck + bash -n on every push/PR
@@ -88,10 +93,18 @@ spectre-kde/
 │   ├── restore-backup.sh       shared restore path used by rollback.sh + fail-safe
 │   ├── layout.js        panel layout (top bar + dock), native scripting API
 │   ├── dock-launchers.list     pinned dock apps, edited to add/remove one
+│   ├── dock-config      dock geometry/style knobs read by apply.sh + quick-update.sh
+│   ├── topbar-config    top bar height and which widgets it shows
 │   ├── resolve-launchers.sh    keeps only launchers that are installed
 │   ├── desktop-file-path.sh    resolves a desktop-file id to its path
 │   ├── make-wallpaper.py       regenerates the vendored wallpaper (needs numpy+Pillow)
 │   ├── tray-config.js   system tray curation (pinned items + order)
+│   ├── manage-dock.sh   add/remove/find/list pinned dock apps
+│   ├── manage-wallpaper.sh     list/set the desktop wallpaper
+│   ├── manage-autostart.sh     sync ~/.config/autostart/ to scripts/autostart.list
+│   ├── manage-nightlight.sh    Night Color (blue-light filter) on/off/schedule
+│   ├── toggle-theme.sh  switch light <-> dark from the current marker
+│   ├── export-profile.sh / import-profile.sh   save/restore a named config profile
 │   └── probe-panels.js  read-only panel/widget probe (detect.sh + verify.sh)
 └── screenshots/         captured after apply
 ```
@@ -109,12 +122,17 @@ per machine and are *not* normalized.
 ```bash
 cd ~/spectre-kde
 ./detect.sh          # inventory (read-only)
+./menu.sh            # interactive manager: apply, dock, wallpaper, backups, profiles
 ./apply.sh           # apply the light look
 ./apply.sh --dark    # apply the dark look
+./apply.sh --light --quick   # skip the final restart + pass 2 (fast iteration)
+./quick-update.sh    # re-apply dock/top bar/tray only, no theme switch, no restart
 ./verify.sh          # status report
+./verify.sh --no-health      # skip the journal/fontconfig/fs-verity health block
 ./sync.sh            # snapshot current live config -> config/ (normalized)
 ./sync.sh --commit   # ...and commit it
 ./rollback.sh        # restore the most recent backup
+./reset.sh           # put the repo's default dock/top-bar config back
 
 # Theme is applied manually via ./apply.sh --light|--dark, or by choosing the
 # Global Theme in KDE System Settings. There is no automatic dark/light
@@ -125,6 +143,17 @@ cd ~/spectre-kde
 # All three paths converge because scripts/patch-lnf.sh normalizes the
 # user-local LNF defaults before each apply — icons and cursor stay pinned.
 ```
+
+`--quick` trades the authoritative pass for speed: `apply.sh` normally restarts
+plasmashell a second time and re-runs the full verification afterwards, because
+Plasma serialises several panel keys asynchronously. `--quick` stops after pass 1
+(with `verify.sh --no-health`), so it is for iterating on the light/dark switch —
+run `./verify.sh` once when you are done.
+
+`quick-update.sh` is the narrower tool: it re-runs `scripts/layout.js` and
+`scripts/tray-config.js` with the current `dock-config`/`dock-launchers.list`/
+`topbar-config`, and touches nothing else. Use it after editing a dock or top-bar
+knob; use `apply.sh` when the theme itself changes.
 
 ## 5. What exactly is applied
 
@@ -172,8 +201,26 @@ Executed through `org.kde.PlasmaShell.evaluateScript` (native API):
    with pinned launchers, `org.kde.plasma.marginsseparator`, `org.kde.plasma.trash`;
    `gridUnit × 26/9` tall, floating, centered, fit-to-content).
 
-Panel heights scale with your `gridUnit`; `verify.sh` therefore range-checks them
-(24–44 px and 44–66 px) rather than comparing exact values.
+Panel heights scale with your `gridUnit`; `verify.sh` therefore derives the
+expected range from the configured multiplier (`TOPBAR_HEIGHT_MULTIPLIER`,
+`DOCK_HEIGHT_MULTIPLIER`) instead of comparing exact values, so a deliberately
+larger bar is not reported as a failure.
+
+#### Top bar widgets — `scripts/topbar-config`
+
+Which widgets the bar shows (and how tall it is) is configuration, not code:
+
+```bash
+TOPBAR_HEIGHT_MULTIPLIER=10/6   # 30 px at gridUnit 18
+TOPBAR_SHOW_APP_MENU=true       # global menu
+TOPBAR_SHOW_PAGER=true          # workspace pager
+TOPBAR_SHOW_TRAY=true           # system tray
+TOPBAR_SHOW_CLOCK=true          # digital clock
+```
+
+`apply.sh` and `quick-update.sh` substitute these into `scripts/layout.js`.
+`verify.sh` reads the same file and **SKIPs** a widget check that the file turns
+off, rather than failing an apply for a bar you configured on purpose.
 
 #### Pinned dock launchers — `scripts/dock-launchers.list`
 
@@ -251,6 +298,13 @@ unpacked from the original Downloads zip — cannot be applied by mistake.
   wobbly windows, magic lamp, ball, cube off (GPU-heavy/legacy)
 - `org.kde.KWin.reconfigure` is called so settings apply without a restart
 
+### Optional extras (not applied automatically)
+- **Night Color** — `scripts/manage-nightlight.sh status|enable [mode] [temp]|disable|schedule <start> <end>`.
+  Writes `[NightColor]` in `kwinrc` (which `backup.sh` already covers) and
+  reconfigures KWin, so no logout is needed. Also reachable from `./menu.sh`.
+  Not applied by `apply.sh`: a blue-light filter is a preference, not part of
+  the look.
+
 ### Multi-monitor behaviour
 - Nothing is hard-coded to a screen: panels are placed on the default (primary)
   screen at apply time; Plasma panels never duplicate themselves across displays.
@@ -261,6 +315,11 @@ unpacked from the original Downloads zip — cannot be applied by mistake.
 
 ## 6. Keyboard map (all KDE defaults, kept intact)
 
+`apply.sh` writes **no** shortcuts. Plasma 6 already ships a mac-like map, and
+`verify.sh` asserts the live bindings through KGlobalAccel's own config rather
+than through a file this repo fabricated (see *Known limitations* for the bug
+that replaced).
+
 | Action | Shortcut |
 |---|---|
 | Application launcher | `Meta` (or `Alt+F1`) |
@@ -270,6 +329,7 @@ unpacked from the original Downloads zip — cannot be applied by mistake.
 | Show desktop | `Meta+D` (peek) / `Ctrl+F12` |
 | Next/prev desktop | `Meta+Ctrl+Right/Left` |
 | Move window to desktop | `Shift+Meta+Ctrl+Right/Left` |
+| Window switcher | `Alt+Tab` / `Meta+Tab` |
 | Tiles editor | `Meta+T`; drag-to-edge tiling on |
 
 ## 7. Fullscreen behaviour
@@ -322,6 +382,16 @@ maximized windows, and video fullscreen.
 
 ## 10. Known limitations
 
+- **Global shortcuts are not overridden (and an earlier attempt was broken).**
+  An earlier revision wrote a `[Global Shortcuts]` group of `Meta+X=component,action`
+  pairs into `kglobalshortcutsrc`. KDE has no such group: KGlobalAccel stores
+  `Shortcut,Default,Description` triples under a group named after the owning
+  *component* (`[kwin]`, `[ksmserver]`, …). The section was never read, and
+  because KGlobalAccel owns and re-serialises that file it was dropped on its next
+  write — the same failure mode as the old `panelVisibility=hiding` key. It also
+  contradicted the documented map by rebinding `Meta+W` (Overview) to "close
+  window". The write is gone, and `verify.sh` now asserts the live bindings
+  instead, so a real drift is caught rather than a fabricated one.
 - **Login screen (SDDM):** not customized by `apply.sh` — it requires root
   (`/usr/share/sddm/themes`, `/etc/sddm.conf.d/`). Install the Orchis login
   theme explicitly (one-time, idempotent, preserves your cursor/font settings):
@@ -379,17 +449,25 @@ maximized windows, and video fullscreen.
 ## 11. Verification checklist (`./verify.sh`)
 
 Desktop (clean containment, wallpaper, vendored asset present) · top bar and
-dock (global menu, tray, clock, pager, launcher, trash, floating, **centered**,
-fit-to-content) · exactly two panels · **panel visibility = dodge windows** ·
-kwin (aurorae.v2 decoration, 4 desktops, blur on, wobbly off) · theme (LNF,
-colors, icons, cursor, cursor size, font, splash resolution) · LNF defaults
-pinned for cursor, icons and decoration id · the pinned
-`DefaultLight/DarkLookAndFeel` pair · **GTK 3 *and* 4** wiring ·
-fontconfig rejectfont · backup present. SDDM login theme reports PASS when
+dock (global menu, tray, clock, pager — each SKIPped if `scripts/topbar-config`
+turns it off — launcher, trash, floating, **centered**, fit-to-content) · exactly
+two panels · **panel visibility = dodge windows** · panel heights derived from the
+configured multipliers · kwin (aurorae.v2 decoration, 4 desktops, blur on, wobbly
+off) · theme (LNF, colors, icons, cursor, cursor size, font, splash resolution) ·
+LNF defaults pinned for cursor, icons and decoration id · the pinned
+`DefaultLight/DarkLookAndFeel` pair · **GTK 3 *and* 4** wiring · fontconfig
+rejectfont · **keyboard map read from KGlobalAccel's own component groups** ·
+backup present. SDDM login theme reports PASS when
 installed (`verify.sh` SKIPs it otherwise — it is an optional,
 separately-installed step). Reboot persistence auto-detects whether the running
 settings survived a reboot since the last apply, reading the marker for the mode
 that is actually applied.
+
+`verify.sh --no-health` skips the health block (journal scan, forced fontconfig
+rebuild, fs-verity kernel-log count). Those checks say nothing about whether the
+*configuration* applied and are the slow part of a run, so `apply.sh` uses it for
+its non-authoritative pass 1 and keeps the full set for pass 2. The skipped
+checks print `SKIP`, never `PASS`, so a skipped check cannot read as a clean one.
 
 `UNVERIFIED` is the fourth outcome, next to PASS/FAIL/SKIP. A check that could
 not read its data source prints it and counts it as a failure. The health

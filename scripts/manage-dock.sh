@@ -5,8 +5,8 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"
-LIST_FILE="$ROOT/dock-launchers.list"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LIST_FILE="$ROOT/scripts/dock-launchers.list"
 DESKTOP_DIRS=(
     "/usr/share/applications"
     "/usr/local/share/applications"
@@ -30,9 +30,11 @@ list_dock() {
         [[ "$line" =~ ^[[:space:]]*# ]] && continue
         [[ -z "${line// }" ]] && continue
         # Extract the desktop file (before comment)
-        local entry=$(echo "$line" | sed 's/[[:space:]]*#.*$//' | tr -d ' ')
+        local entry
+        entry=$(echo "$line" | sed 's/[[:space:]]*#.*$//' | tr -d ' ')
         # Handle alternatives (first|second)
-        local main_id=$(echo "$entry" | cut -d'|' -f1)
+        local main_id
+        main_id=$(echo "$entry" | cut -d'|' -f1)
         if [ -n "$main_id" ]; then
             echo -e "  ${GREEN}$i.${NC} $main_id"
             ((i++))
@@ -49,8 +51,10 @@ find_app() {
     for dir in "${DESKTOP_DIRS[@]}"; do
         [ -d "$dir" ] || continue
         while IFS= read -r -d '' file; do
-            local basename_file=$(basename "$file")
-            local name=$(grep -m1 "^Name=" "$file" 2>/dev/null | cut -d'=' -f2-)
+            local basename_file
+            basename_file=$(basename "$file")
+            local name
+            name=$(grep -m1 "^Name=" "$file" 2>/dev/null | cut -d'=' -f2-)
             if [[ "$basename_file" =~ $search ]] || [[ "${name:-}" =~ $search ]]; then
                 echo -e "  ${GREEN}ID:${NC} $basename_file"
                 [ -n "${name:-}" ] && echo -e "  ${BLUE}Name:${NC} $name"
@@ -119,7 +123,7 @@ remove_app() {
     cp "$LIST_FILE" "$LIST_FILE.bak"
     
     # Remove the line (handle both with and without comments)
-    sed -i "/^[[:space:]]*$app_id[[:space:]]*\(#.*\)*$/d" "$LIST_FILE"
+    sed -i "/^[[:space:]]*${app_id}[[:space:]]*\(#.*\)*$/d" "$LIST_FILE"
     
     echo -e "${GREEN}Removed:${NC} $app_id"
     echo -e "Backup saved to: $LIST_FILE.bak"

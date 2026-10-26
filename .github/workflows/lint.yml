@@ -22,12 +22,14 @@ jobs:
         run: |
           shellcheck -S warning \
             apply.sh backup.sh detect.sh rollback.sh sync.sh verify.sh \
+            menu.sh quick-update.sh reset.sh install-deps.sh \
             scripts/*.sh
 
       - name: bash syntax check
         run: |
           bash -n \
             apply.sh backup.sh detect.sh rollback.sh sync.sh verify.sh \
+            menu.sh quick-update.sh reset.sh install-deps.sh \
             scripts/*.sh
 
   test-verify:

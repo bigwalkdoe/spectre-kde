@@ -5,6 +5,21 @@ set -u
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 CFG="$HOME/.config"
 FAILED=0
+# --no-health skips the session-health block (journal scan, forced fontconfig
+# rebuild, fs-verity kernel-log count). That block is the slow part of a run -
+# a 24h journal read plus a full `fc-cache -f` - and it says nothing about
+# whether the *configuration* applied. apply.sh uses it for its non-authoritative
+# pass 1 and leaves the full check for the authoritative pass 2, so an apply no
+# longer pays for the same health scan three times. Running ./verify.sh by hand
+# always does the full check.
+HEALTH=1
+for _a in "$@"; do
+  case "$_a" in
+    --no-health|--fast) HEALTH=0 ;;
+    -h|--help) echo "usage: $0 [--no-health]"; exit 0 ;;
+    *) echo "usage: $0 [--no-health]" >&2; exit 2 ;;
+  esac
+done
 CHK(){ if [ "$3" = "$2" ]; then echo "PASS  $1"; else echo "FAIL  $1  (expected '$2', got '$3')"; FAILED=$((FAILED+1)); fi; }
 # range check for values that Plasma snaps (e.g. panel heights); usage: CHKR <label> <min> <max> <value>
 CHKR(){ if [ "$4" -ge "$2" ] 2>/dev/null && [ "$4" -le "$3" ] 2>/dev/null; then echo "PASS  $1 ($4)"; else echo "FAIL  $1  (expected $2..$3, got '$4')"; FAILED=$((FAILED+1)); fi; }
@@ -14,6 +29,27 @@ CHKR(){ if [ "$4" -ge "$2" ] 2>/dev/null && [ "$4" -le "$3" ] 2>/dev/null; then 
 # already follows: absence of data is never a clean verdict.
 UNVERIFIED(){ echo "UNVERIFIED  $1  -- $2"; FAILED=$((FAILED+1)); }
 q(){ kreadconfig6 --file "$1" --group "$2" --key "$3" 2>/dev/null || echo "(unset)"; }
+SKIP(){ echo "SKIP  $1"; }
+# Optional-widget checks: a widget the user turned off in scripts/topbar-config
+# is not a failure, so those checks are SKIPped rather than FAILed. Keeping the
+# assertions unconditional would have made every apply with a hidden tray or
+# pager roll itself back.
+TOPBAR_CFG="$ROOT/scripts/topbar-config"
+TB_APP_MENU=true; TB_PAGER=true; TB_TRAY=true; TB_CLOCK=true
+if [ -f "$TOPBAR_CFG" ]; then
+  # shellcheck disable=SC1090
+  . "$TOPBAR_CFG"
+  TB_APP_MENU="${TOPBAR_SHOW_APP_MENU:-true}"
+  TB_PAGER="${TOPBAR_SHOW_PAGER:-true}"
+  TB_TRAY="${TOPBAR_SHOW_TRAY:-true}"
+  TB_CLOCK="${TOPBAR_SHOW_CLOCK:-true}"
+fi
+DOCK_CFG="$ROOT/scripts/dock-config"
+if [ -f "$DOCK_CFG" ]; then
+  # shellcheck disable=SC1090
+  . "$DOCK_CFG"
+fi
+want(){ [ "$1" = "true" ] && return 0; return 1; }
 
 echo "=== spectre-kde: verification ==="
 echo "Plasma: $(plasmashell --version 2>/dev/null)"
@@ -41,10 +77,26 @@ TP="$(printf '%s\n' "$PROBE" | grep '^top;' | tr -d '\n')"
 DP="$(printf '%s\n' "$PROBE" | grep '^bottom;' | tr -d '\n')"
 CHK "top bar found"          "1" "$([ -n "$TP" ] && echo 1 || echo 0)"
 CHK "dock found"             "1" "$([ -n "$DP" ] && echo 1 || echo 0)"
-CHK "global menu in top bar" "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.appmenu')"
-CHK "system tray in top bar" "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.systemtray')"
-CHK "clock in top bar"        "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.digitalclock')"
-CHK "workspace pager in top bar" "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.pager')"
+if want "$TB_APP_MENU"; then
+  CHK "global menu in top bar" "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.appmenu')"
+else
+  SKIP "global menu in top bar (disabled in scripts/topbar-config)"
+fi
+if want "$TB_TRAY"; then
+  CHK "system tray in top bar" "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.systemtray')"
+else
+  SKIP "system tray in top bar (disabled in scripts/topbar-config)"
+fi
+if want "$TB_CLOCK"; then
+  CHK "clock in top bar"        "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.digitalclock')"
+else
+  SKIP "clock in top bar (disabled in scripts/topbar-config)"
+fi
+if want "$TB_PAGER"; then
+  CHK "workspace pager in top bar" "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.pager')"
+else
+  SKIP "workspace pager in top bar (disabled in scripts/topbar-config)"
+fi
 CHK "bottom dock present"     "1" "$(printf '%s' "$DP" | grep -c 'org.kde.plasma.icontasks')"
 CHK "launcher at start of dock" "1" "$(printf '%s' "$DP" | grep -c 'org.kde.plasma.kickoff')"
 CHK "icons-only task manager in dock" "1" "$(printf '%s' "$DP" | grep -c 'org.kde.plasma.icontasks')"
@@ -90,8 +142,27 @@ fi
 TPH="$(printf '%s' "$TP" | sed -n 's/.*;h=\([0-9]*\);.*/\1/p' | head -1)"
 DPH="$(printf '%s' "$DP" | sed -n 's/.*;h=\([0-9]*\);.*/\1/p' | head -1)"
 echo "  [debug] top height value seen: '$TPH' | dock height value seen: '$DPH'"
-CHKR "top bar height 24..44px (target ~30)" "24" "44" "$TPH"
-CHKR "dock height 44..66px (target ~52)" "44" "66" "$DPH"
+# Panel heights are now configurable (scripts/topbar-config, scripts/dock-config),
+# so the expected range is derived from the configured multiplier instead of
+# being hardcoded to the 10/6 and 26/9 defaults. A user who makes the bar taller
+# on purpose should not be rolled back by verification.
+grid_px(){ # <multiplier> [gridUnit] -> rounded px
+  local m="$1" g="${2:-18}" n d
+  case "$m" in */*) n="${m%%/*}"; d="${m#*/}" ;; *) n="$m"; d=1 ;; esac
+  case "$n$d" in ''|*[!0-9]*) return 1 ;; esac
+  [ "$d" -gt 0 ] || return 1
+  echo $(( (g * n + d / 2) / d ))
+}
+TB_MULT="${TOPBAR_HEIGHT_MULTIPLIER:-10/6}"
+DK_MULT="${DOCK_HEIGHT_MULTIPLIER:-26/9}"
+TB_EXP="$(grid_px "$TB_MULT" 2>/dev/null || echo "")"
+DK_EXP="$(grid_px "$DK_MULT" 2>/dev/null || echo "")"
+[ -n "$TB_EXP" ] || TB_EXP=30
+[ -n "$DK_EXP" ] || DK_EXP=52
+CHKR "top bar height $((TB_EXP-8))..$((TB_EXP+8))px (target ~$TB_EXP from $TB_MULT)" \
+     "$((TB_EXP-8))" "$((TB_EXP+8))" "$TPH"
+CHKR "dock height $((DK_EXP-8))..$((DK_EXP+8))px (target ~$DK_EXP from $DK_MULT)" \
+     "$((DK_EXP-8))" "$((DK_EXP+8))" "$DPH"
 
 # Panel visibility: 0=NormalPanel 1=AutoHide 2=DodgeWindows 3=WindowsGoBelow.
 # apply.sh writes this key (the scripting API cannot) and Plasma re-serialises it
@@ -294,16 +365,49 @@ else
   FAILED=$((FAILED+1))
 fi
 
-echo "--- global shortcuts (macOS-style) ---"
+echo "--- keyboard map (KDE defaults, asserted live) ---"
+# The map documented in README section 6, read from KGlobalAccel's own file in
+# KGlobalAccel's own format (component group -> "Shortcut,Default,Description").
+# The previous version of this block checked a `[Global Shortcuts]` group that
+# apply.sh invented; KGlobalAccel never wrote or read it, so the checks could only
+# ever pass against the same file apply.sh had just fabricated - and once
+# KGlobalAccel re-serialised the file they failed on every run.
 SHORTCUTS="$CFG/kglobalshortcutsrc"
+# sc_component <component> <action> -> the shortcut part of the triple (before the first comma)
+sc_component(){
+  kreadconfig6 --file kglobalshortcutsrc --group "$1" --key "$2" 2>/dev/null | cut -d, -f1
+}
+# sc_has <component> <action> <combo>: the field is tab-separated when an action
+# has several bindings, so match the combo as a whole field rather than a substring.
+sc_has(){
+  local got; got="$(sc_component "$1" "$2")"
+  [ -n "$got" ] || { echo "no"; return; }
+  printf '%s' "$got" | tr '\t' '\n' | grep -qxF "$3" && echo "yes" || echo "no"
+}
 if [ -f "$SHORTCUTS" ]; then
-  # Check key shortcuts exist
-  for sc in "Meta+Space=org.kde.krunner,activate" "Meta+Return=org.kde.konsole,activate" "Meta+E=org.kde.dolphin,activate" "Meta+W=org.kde.kwin,close" "Meta+Left=org.kde.kwin,quicktile-left" "Meta+Right=org.kde.kwin,quicktile-right" "Meta+Up=org.kde.kwin,maximize" "Meta+Down=org.kde.kwin,minimize" "Meta+F=org.kde.kwin,fullscreen" "Meta+1=org.kde.kwin,switch-to-desktop-1" "Meta+Shift+Q=org.kde.ksmserver,logout" "Meta+L=org.kde.ksmserver,lock"; do
-    key="${sc%%=*}"
-    val="${sc#*=}"
-    got="$(kreadconfig6 --file kglobalshortcutsrc --group 'Global Shortcuts' --key "$key" 2>/dev/null)"
-    CHK "shortcut $key -> $val" "$val" "${got:-(unset)}"
-  done
+  while IFS='|' read -r comp action combo label; do
+    [ -n "${comp:-}" ] || continue
+    CHK "$label ($action = $combo)" "yes" "$(sc_has "$comp" "$action" "$combo")"
+  done <<'MAP'
+kwin|Overview|Meta+W|Meta+W = Overview (Mission Control analog)
+kwin|Grid View|Meta+G|Meta+G = Grid View
+kwin|Show Desktop|Meta+D|Meta+D = Show Desktop
+kwin|Edit Tiles|Meta+T|Meta+T = Tiles editor
+kwin|Switch One Desktop to the Left|Meta+Ctrl+Left|Meta+Ctrl+Left = previous desktop
+kwin|Switch One Desktop to the Right|Meta+Ctrl+Right|Meta+Ctrl+Right = next desktop
+kwin|Window One Desktop to the Left|Meta+Ctrl+Shift+Left|Shift+Meta+Ctrl+Left = move window to previous desktop
+kwin|Window One Desktop to the Right|Meta+Ctrl+Shift+Right|Shift+Meta+Ctrl+Right = move window to next desktop
+MAP
+  # The launcher is a two-binding action ("Meta<TAB>Alt+F1"); check the Meta one.
+  CHK "Meta = application launcher (macOS Cmd analog)" "yes" \
+    "$(sc_component plasmashell 'activate application launcher' | tr '\t' '\n' | grep -qxF 'Meta' && echo yes || echo no)"
+  # KRunner registers its own component the first time it runs, so an unset
+  # component means "not yet launched", not "wrong binding".
+  if [ -n "$(kreadconfig6 --file kglobalshortcutsrc --group krunner --key _launch 2>/dev/null)" ]; then
+    CHK "Alt+F2 = KRunner" "yes" "$(sc_has krunner _launch 'Alt+F2')"
+  else
+    SKIP "Alt+F2 = KRunner (krunner has not registered its shortcut yet; open it once)"
+  fi
 else
   echo "FAIL  $SHORTCUTS missing"
   FAILED=$((FAILED+1))
@@ -394,6 +498,9 @@ else
 fi
 
 echo "--- health (crash-loop + hardware) ---"
+if [ "$HEALTH" -eq 0 ]; then
+  echo "SKIP  health checks (--no-health)"
+else
 CHK "plasmashell unit active" "active" "$(systemctl --user is-active plasma-plasmashell 2>/dev/null)"
 # journalctl prints nothing and still exits 0 when it cannot open the journal, so
 # an unreadable log and a genuinely quiet one both count as zero matches and the
@@ -461,6 +568,7 @@ else
   UNVERIFIED "no fs-verity digest mismatch in last 24h" \
     "the kernel journal yielded no entries over 24h, so it was not read; mismatches in that window would be invisible"
 fi
+fi  # HEALTH
 
 echo "--- reboot persistence ---"
 # Read the marker for the mode that is actually applied. Picking the newest

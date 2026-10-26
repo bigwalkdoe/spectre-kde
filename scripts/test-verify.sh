@@ -102,6 +102,21 @@ lacks "PASS  no plasmashell crash-loop" \
 lacks "PASS  no fs-verity digest mismatch" \
   "an unreadable kernel log never prints PASS"
 
+# --no-health is what apply.sh uses for its non-authoritative pass 1: it must
+# drop the whole health block (journal read + forced fontconfig rebuild +
+# fs-verity count) rather than silently passing it, so a skipped check can never
+# be mistaken for a healthy one. Assert the SKIP marker and the absence of the
+# per-check verdicts.
+OUT="$(PATH="$WORK/dead:$PATH" bash "$ROOT/verify.sh" --no-health 2>&1)" || true
+has "SKIP  health checks (--no-health)" \
+  "--no-health reports that health checks were skipped"
+lacks "no plasmashell crash-loop" \
+  "--no-health does not print a crash-loop verdict"
+lacks "no invalid fontconfig caches" \
+  "--no-health does not claim the fontconfig caches are clean"
+lacks "no fs-verity digest mismatch" \
+  "--no-health does not print an fs-verity verdict"
+
 echo "--- result ---"
 if [ "$fails" -eq 0 ]; then
   echo "test-verify: ALL PASS"

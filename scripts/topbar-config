@@ -1,0 +1,17 @@
+# spectre-kde top bar configuration
+# Customize top bar appearance and widgets
+
+# Top bar height multiplier (grid units)
+TOPBAR_HEIGHT_MULTIPLIER=10/6
+
+# Show global menu (true/false)
+TOPBAR_SHOW_APP_MENU=true
+
+# Show workspace pager (true/false)
+TOPBAR_SHOW_PAGER=true
+
+# Show system tray (true/false)
+TOPBAR_SHOW_TRAY=true
+
+# Show digital clock (true/false)
+TOPBAR_SHOW_CLOCK=true

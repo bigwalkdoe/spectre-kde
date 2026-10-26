@@ -9,12 +9,22 @@
 set -u
 ROOT="$(cd "$(dirname "$0")" && pwd)" && cd "$ROOT" || exit 1
 
-MODE="${1:---light}"
+QUICK=0
+MODE=""
+for arg in "$@"; do
+  case "$arg" in
+    --quick) QUICK=1 ;;
+    --light|--dark) MODE="$arg" ;;
+    *) echo "usage: $0 [--light|--dark] [--quick]"; exit 2 ;;
+  esac
+done
+MODE="${MODE:---light}"
 case "$MODE" in
   --light) LNF=Orchis; LNF_PKG="com.github.vinceliuice.Orchis";       COLORS=Orchis;      ICONS=FairyWren_Light; CURSOR=Bibata-Modern-Ice; SFX="light" ;;
   --dark)  LNF=Orchis-dark; LNF_PKG="com.github.vinceliuice.Orchis-dark"; COLORS=OrchisDark;  ICONS=FairyWren_Dark;  CURSOR=Bibata-Modern-Ice; SFX="dark" ;;
-  *) echo "usage: $0 [--light|--dark]"; exit 2 ;;
+  *) echo "usage: $0 [--light|--dark] [--quick]"; exit 2 ;;
 esac
+[ "$QUICK" -eq 1 ] && echo "Quick mode enabled - some optimizations will be applied"
 # Plasma panel visibility enum ([PlasmaViews][Panel N] panelVisibility):
 # 0=NormalPanel 1=AutoHide 2=DodgeWindows 3=WindowsGoBelow. 2 = macOS-style
 # (hidden until the mouse reaches the screen edge; fullscreen dodges the bar).
@@ -155,12 +165,15 @@ else
   echo "note: splash theme '$SPLASH' is not installed - leaving the existing ksplashrc value alone"
 fi
 
-say "Fontconfig: rebuild cache + exclude web-only fonts"
-# Rebuild the font cache so a stale/corrupt cache can never take down plasmashell
-# again (it crashed in FcCharSetHasChar during Klipper popup text shaping).
-fc-cache -f >/dev/null 2>&1 || die "fc-cache failed"
+say "Fontconfig: exclude web-only fonts + rebuild cache"
 # Exclude the Inter web/woff-hinted subsets: they are redundant duplicates of
 # the same family and are a known fontconfig cache-corruption trigger.
+#
+# Order matters: the config is written BEFORE the single cache rebuild. Earlier
+# revisions ran `fc-cache -f` once for the "stale cache" theory and again after
+# writing the config, i.e. two full rebuilds of the whole font set per apply.
+# One rebuild *after* the config exists covers both cases - a corrupt cache and
+# the newly excluded families - because -f discards the old cache regardless.
 FCDIR="$HOME/.config/fontconfig"; mkdir -p "$FCDIR"
 cat > "$FCDIR/fonts.conf" <<'EOF'
 <?xml version="1.0"?>
@@ -290,13 +303,24 @@ say "Notifications: banner style, grouped, no sounds"
 mkdir -p "$HOME/.config"
 cp "$ROOT/config/applied-plasma-notifications.conf" "$HOME/.config/plasma-notifications.conf" || die "notifications config"
 
-say "Global Shortcuts: macOS-style bindings"
-mkdir -p "$HOME/.config"
-# kglobalaccel5 format: write each shortcut via kwriteconfig6
-while IFS='=' read -r key value; do
-  case "$key" in \#*|'') continue ;; esac
-  kwriteconfig6 --file kglobalshortcutsrc --group "Global Shortcuts" --key "$key" "$value" || die "shortcut $key"
-done < <(grep -vE '^\s*(\#|$)' "$ROOT/config/applied-kglobalshortcutsrc.conf" | grep '=')
+say "Global Shortcuts: KDE's macOS-like defaults kept intact"
+# Deliberately NO shortcut writing.
+#
+# An earlier revision wrote a `[Global Shortcuts]` group of `Meta+X=component,action`
+# pairs into kglobalshortcutsrc. That group does not exist in KDE's shortcut
+# format: KGlobalAccel stores `Shortcut,Default,Description` triples under a
+# group named after the owning *component* (`[kwin]`, `[ksmserver]`, ...). The
+# group was therefore never read, and because KGlobalAccel owns and re-serialises
+# kglobalshortcutsrc it silently dropped the section on its next write - the same
+# failure mode as the old `panelVisibility=hiding` key. It also contradicted the
+# documented keyboard map: it bound Meta+W to "close window" while Plasma's
+# Overview owns Meta+W.
+#
+# Plasma 6 already ships a mac-like map (Meta = launcher, Meta+W = Overview,
+# Meta+G = Grid View, Meta+D = Show Desktop, Meta+Tab = window switcher,
+# Meta+Ctrl+Left/Right = desktops), so there is nothing to override here.
+# verify.sh asserts that live map instead of a config file, so drift is caught.
+echo "shortcut map: Plasma defaults left untouched (verify.sh asserts them live)"
 
 say "Desktop: clean (no icons) containment"
 APP=plasma-org.kde.plasma.desktop-appletsrc
@@ -364,11 +388,22 @@ start_shell || die "plasmashell did not come back"
 say "Applying panel layout (scripts/layout.js)"
 # Load dock configuration
 DOCK_CFG="$ROOT/scripts/dock-config"
+# shellcheck disable=SC1090  # path is computed from $ROOT at runtime
 [ -f "$DOCK_CFG" ] && . "$DOCK_CFG" || true
 DOCK_POSITION="${DOCK_POSITION:-bottom}"
 DOCK_HEIGHT_MULTIPLIER="${DOCK_HEIGHT_MULTIPLIER:-26/9}"
 DOCK_FLOATING="${DOCK_FLOATING:-true}"
 DOCK_CENTERED="${DOCK_CENTERED:-true}"
+
+# Load topbar configuration
+TOPBAR_CFG="$ROOT/scripts/topbar-config"
+# shellcheck disable=SC1090  # path is computed from $ROOT at runtime
+[ -f "$TOPBAR_CFG" ] && . "$TOPBAR_CFG" || true
+TOPBAR_HEIGHT_MULTIPLIER="${TOPBAR_HEIGHT_MULTIPLIER:-10/6}"
+TOPBAR_SHOW_APP_MENU="${TOPBAR_SHOW_APP_MENU:-true}"
+TOPBAR_SHOW_PAGER="${TOPBAR_SHOW_PAGER:-true}"
+TOPBAR_SHOW_TRAY="${TOPBAR_SHOW_TRAY:-true}"
+TOPBAR_SHOW_CLOCK="${TOPBAR_SHOW_CLOCK:-true}"
 
 # Resolve the pinned dock launchers first and inject them into layout.js. The
 # launcher ids used to be hardcoded in layout.js, which meant an app that is not
@@ -386,6 +421,11 @@ LAYOUT_JS="$(sed -e "s|@DOCK_LAUNCHERS@|$DOCK_LAUNCHERS|g" \
                   -e "s|@DOCK_HEIGHT_MULTIPLIER@|$DOCK_HEIGHT_MULTIPLIER|g" \
                   -e "s|@DOCK_FLOATING@|$DOCK_FLOATING|g" \
                   -e "s|@DOCK_CENTERED@|$DOCK_CENTERED|g" \
+                  -e "s|@TOPBAR_HEIGHT_MULTIPLIER@|$TOPBAR_HEIGHT_MULTIPLIER|g" \
+                  -e "s|@TOPBAR_SHOW_APP_MENU@|$TOPBAR_SHOW_APP_MENU|g" \
+                  -e "s|@TOPBAR_SHOW_PAGER@|$TOPBAR_SHOW_PAGER|g" \
+                  -e "s|@TOPBAR_SHOW_TRAY@|$TOPBAR_SHOW_TRAY|g" \
+                  -e "s|@TOPBAR_SHOW_CLOCK@|$TOPBAR_SHOW_CLOCK|g" \
                   "$ROOT/scripts/layout.js")" \
   || die "could not render layout.js"
 # Guard the substitution explicitly: without this, an unresolved token would make
@@ -406,69 +446,13 @@ echo "$TRAY_OUT"
 echo "$TRAY_OUT" | grep -qi "ERROR" && die "tray script reported an error"
 
 # ---- Panel visibility on Wayland -----------------------------------------
-# Plasma 6.7's scripting API has no usable visibility property (assignments are
-# silently dropped). Fullscreen windows therefore stay BELOW the panels with the
-# default view config. The real, Plasma-owned config key is:
-#   [PlasmaViews][Panel N] panelVisibility=<n>
-# with the enum the shipped Panel View KCM uses (PanelConfiguration.qml):
-#   0 = NormalPanel (always visible)   1 = AutoHide
-#   2 = DodgeWindows                   3 = WindowsGoBelow
-# 2 gives macOS-style fullscreen: menubar/dock stay hidden until the mouse
-# touches the screen edge, and fullscreen surfaces dodge them.
-#
-# The panel ids must come from layout.js, not from grepping plasmashellrc. This
-# script removes every panel and creates two new ones, which means NEW ids -
-# and plasmashell only flushes plasmashellrc asynchronously. Two earlier
-# revisions wrote to the stale on-disk ids (707/728) while the live panels were
-# 736/757, so the write "succeeded" and the setting never took effect.
-# So: take the ids layout.js reports, wait for plasmashellrc to catch up, write,
-# then read back and confirm. Because Plasma itself owns and re-serialises
-# panelVisibility, the value survives the shell restarts below.
+# The implementation lives in scripts/set-panel-visibility.sh because
+# quick-update.sh re-runs layout.js too (which mints new panel ids) and must
+# re-assert the same key. Two copies of this logic would drift, and a missed
+# copy shows up as panels that stay always-visible after a dock change.
 say "Panel visibility mode (fullscreen-aware)"
-PANEL_RC_FILE="$HOME/.config/plasmashellrc"
-disk_panel_ids(){ grep -oE '^\[PlasmaViews\]\[Panel [0-9]+\]' "$PANEL_RC_FILE" \
-                    | grep -oE '[0-9]+' | sort -u | tr '\n' ' ' | sed 's/ $//'; }
-WANT_IDS="$(printf '%s' "$LAYOUT_OUT" | grep -oE 'panelIds=[0-9]+,[0-9]+' | head -1 | cut -d= -f2 | tr ',' ' ')"
-if [ -n "$WANT_IDS" ]; then
-  echo "  layout.js created panel(s): $WANT_IDS"
-else
-  WANT_IDS="$(disk_panel_ids)"
-  echo "  WARNING: layout.js did not report panel ids; falling back to on-disk ids ($WANT_IDS)"
-fi
-[ -n "$WANT_IDS" ] || die "no panel ids available - cannot set panel visibility"
-
-attempt=0
-while :; do
-  attempt=$((attempt + 1))
-  [ "$attempt" -le 15 ] || die "plasmashellrc never contained panels [$WANT_IDS] after 15s (on disk: $(disk_panel_ids))"
-  HAVE_IDS=" $(disk_panel_ids) "
-  all_present=1
-  for w in $WANT_IDS; do case "$HAVE_IDS" in *" $w "*) ;; *) all_present=0 ;; esac; done
-  if [ "$all_present" -eq 0 ]; then
-    sleep 1
-    continue
-  fi
-  for pid in $WANT_IDS; do
-    kwriteconfig6 --file plasmashellrc --group PlasmaViews --group "Panel $pid" \
-      --key panelVisibility "$PANEL_VISIBILITY" || die "panelVisibility for panel $pid"
-  done
-  # Read back: kwriteconfig6 exiting 0 only means the file was written, not that
-  # Plasma kept the key.
-  ok=1
-  for pid in $WANT_IDS; do
-    got="$(kreadconfig6 --file plasmashellrc --group PlasmaViews --group "Panel $pid" \
-            --key panelVisibility 2>/dev/null || true)"
-    if [ "$got" = "$PANEL_VISIBILITY" ]; then
-      echo "  Panel $pid: panelVisibility=$got (dodge windows)"
-    else
-      echo "  Panel $pid: read back '$got' (expected $PANEL_VISIBILITY) - retrying"
-      ok=0
-    fi
-  done
-  [ "$ok" -eq 1 ] && break
-  sleep 1
-done
-
+bash "$ROOT/scripts/set-panel-visibility.sh" "$LAYOUT_OUT" "$PANEL_VISIBILITY" \
+  || die "could not set panel visibility"
 
 say "Wallpaper"
 WALLPAPER_DIR="$HOME/.local/share/wallpapers/kde-setup-02"
@@ -506,15 +490,19 @@ say "Verification (pass 1)"
 # pass 2 below runs after a full restart and is the authoritative gate. Results
 # are still printed either way.
 export KDE_APPLY_IN_PROGRESS=1
-if ! bash "$ROOT/verify.sh"; then
+if ! bash "$ROOT/verify.sh" --no-health; then
   say "NOTE: pass 1 reported failures; pass 2 after restart is authoritative"
 fi
 
-say "Persistence check (reload plasmashell once more)"
-shutdown_shell graceful || die "could not stop plasmashell"
-start_shell || die "plasmashell did not come back"
-sleep 3
-bash "$ROOT/verify.sh" || FAIL=1
+if [ "$QUICK" -eq 1 ]; then
+  say "Quick mode: skipping final restart and pass 2 verification"
+else
+  say "Persistence check (reload plasmashell once more)"
+  shutdown_shell graceful || die "could not stop plasmashell"
+  start_shell || die "plasmashell did not come back"
+  sleep 3
+  bash "$ROOT/verify.sh" || FAIL=1
+fi
 
 if [ "$FAIL" -eq 0 ]; then
   {
