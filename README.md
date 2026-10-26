@@ -80,6 +80,8 @@ spectre-kde/
 ├── rollback.sh          restore the most recent backup
 ├── reset.sh             restore the repo's default dock/top-bar config
 ├── install-deps.sh      install what can be installed for this distro
+├── fix-issues.sh        auto-fix common issues
+├── health.sh            comprehensive system health dashboard
 ├── scripts/restore-backup.sh   the single restore implementation (shared)
 ├── detect.sh            non-destructive environment inventory
 ├── doctor.sh            dependency/asset diagnosis with suggested fixes
@@ -112,6 +114,7 @@ spectre-kde/
 │   ├── diff-config.sh         compare live config with repo snapshots
 │   ├── manage-power.sh       power profile management (performance/balanced/powersave)
 │   ├── export-config.sh     export full live config to tarball
+│   ├── show-shortcuts.sh    display keyboard shortcuts
 │   ├── toggle-theme.sh  switch light <-> dark from the current marker
 │   ├── export-profile.sh / import-profile.sh   save/restore a named config profile
 │   └── probe-panels.js  read-only panel/widget probe (detect.sh + verify.sh)
