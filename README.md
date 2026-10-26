@@ -102,9 +102,12 @@ spectre-kde/
 │   ├── manage-dock.sh   add/remove/find/list pinned dock apps
 │   ├── manage-kwin-rules.sh   add/remove/show/apply KWin window rules
 │   ├── manage-wallpaper.sh     list/set the desktop wallpaper
+│   ├── manage-wallpapers.sh    per-monitor wallpaper assignments
 │   ├── manage-autostart.sh     sync ~/.config/autostart/ to scripts/autostart.list
+│   ├── wallpapers-config       per-monitor wallpaper assignments config
 │   ├── manage-nightlight.sh    Night Color (blue-light filter) on/off/schedule
 │   ├── manage-fonts.sh        install/list/exclude fonts, rebuild cache
+│   ├── manage-notifications.sh notification/DND management
 │   ├── toggle-theme.sh  switch light <-> dark from the current marker
 │   ├── export-profile.sh / import-profile.sh   save/restore a named config profile
 │   └── probe-panels.js  read-only panel/widget probe (detect.sh + verify.sh)

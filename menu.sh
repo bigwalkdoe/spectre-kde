@@ -55,14 +55,15 @@ show_menu() {
     echo ""
     echo -e "${GREEN}7)${NC} Manage Dock Applications"
     echo -e "${GREEN}8)${NC} Manage Wallpapers"
-    echo -e "${GREEN}9)${NC} Manage Autostart Apps"
-    echo -e "${GREEN}10)${NC} Configure Dock Settings"
-    echo -e "${GREEN}11)${NC} Configure Top Bar Settings"
-    echo -e "${GREEN}12)${NC} Manage KWin Window Rules"
-    echo -e "${GREEN}13)${NC} Manage Night Color (Blue Light Filter)"
-    echo -e "${GREEN}14)${NC} Manage Fonts"
-    echo -e "${GREEN}15)${NC} Manage Notifications"
-    echo -e "${GREEN}16)${NC} Quick Update (Dock/Panels/Tray)"
+    echo -e "${GREEN}9)${NC} Per-Monitor Wallpapers"
+    echo -e "${GREEN}10)${NC} Manage Autostart Apps"
+    echo -e "${GREEN}11)${NC} Configure Dock Settings"
+    echo -e "${GREEN}12)${NC} Configure Top Bar Settings"
+    echo -e "${GREEN}13)${NC} Manage KWin Window Rules"
+    echo -e "${GREEN}14)${NC} Manage Night Color (Blue Light Filter)"
+    echo -e "${GREEN}15)${NC} Manage Fonts"
+    echo -e "${GREEN}16)${NC} Manage Notifications"
+    echo -e "${GREEN}17)${NC} Quick Update (Dock/Panels/Tray)"
     echo ""
     echo -e "${YELLOW}MAINTENANCE${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -333,6 +334,67 @@ fonts_menu() {
             7)
                 echo ""
                 "$ROOT/scripts/manage-fonts.sh" info
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo -e "${RED}Invalid choice${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+per_monitor_wallpaper_menu() {
+    while true; do
+        show_header
+        show_status
+        echo -e "${BOLD}PER-MONITOR WALLPAPER MANAGEMENT${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        "$ROOT/scripts/manage-wallpapers.sh" list
+        echo ""
+        echo -e "${GREEN}1)${NC} List assignments"
+        echo -e "${GREEN}2)${NC} Set wallpaper for a screen"
+        echo -e "${GREEN}3)${NC} Clear wallpaper for a screen"
+        echo -e "${GREEN}4)${NC} Apply to live session"
+        echo -e "${RED}0)${NC} Back to Main Menu"
+        echo ""
+        echo -n "Enter your choice [0-4]: "
+        read -r choice
+        case $choice in
+            1)
+                echo ""
+                "$ROOT/scripts/manage-wallpapers.sh" list
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            2)
+                echo ""
+                echo -n "Screen number (1-based): "
+                read -r screen
+                echo -n "Wallpaper filename or path: "
+                read -r wp
+                echo ""
+                "$ROOT/scripts/manage-wallpapers.sh" set "$screen" "$wp"
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            3)
+                echo ""
+                echo -n "Screen number to clear: "
+                read -r screen
+                echo ""
+                "$ROOT/scripts/manage-wallpapers.sh" clear "$screen"
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            4)
+                echo ""
+                "$ROOT/scripts/manage-wallpapers.sh" apply
                 echo ""
                 read -p "Press Enter to continue..."
                 ;;
@@ -633,6 +695,9 @@ while true; do
             wallpaper_menu
             ;;
         9)
+            per_monitor_wallpaper_menu
+            ;;
+        10)
             autostart_menu
             ;;
         10)
