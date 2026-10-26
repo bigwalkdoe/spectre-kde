@@ -7,7 +7,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PROFILE_NAME="${1:-default}"
 PROFILE_DIR="$ROOT/profiles/$PROFILE_NAME"
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 echo "Exporting profile: $PROFILE_NAME"
 

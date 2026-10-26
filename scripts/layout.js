@@ -29,7 +29,18 @@ for (var i = 0; i < ids.length; i++) {
 // Right: system tray + clock. Native widgets only.
 var topPanel = new Panel;
 topPanel.location = "top";
-topPanel.height = Math.round(gridUnit * 10 / 6);   // = 30 px at gridUnit 18
+var topHeightMult = "@TOPBAR_HEIGHT_MULTIPLIER@";
+if (topHeightMult.indexOf("@") !== -1) topHeightMult = "10/6";
+try {
+    var topParts = topHeightMult.split("/");
+    if (topParts.length == 2) {
+        topPanel.height = Math.round(gridUnit * parseInt(topParts[0]) / parseInt(topParts[1]));
+    } else {
+        topPanel.height = Math.round(gridUnit * parseFloat(topHeightMult));
+    }
+} catch(e) {
+    topPanel.height = Math.round(gridUnit * 10 / 6);   // = 30 px at gridUnit 18
+}
 topPanel.floating = false;                          // flush against the screen edge
 topPanel.offset = 0;
 // Panel visibility is deliberately NOT set here: the scripting API drops
@@ -37,12 +48,24 @@ topPanel.offset = 0;
 // ([PlasmaViews][Panel N] panelVisibility) after this script runs, and
 // verify.sh asserts it — so setting it here would only be dead code.
 
-topPanel.addWidget("org.kde.plasma.appmenu");       // Global Menu (app menus + fallback)
-topPanel.addWidget("org.kde.plasma.panelspacer");
-topPanel.addWidget("org.kde.plasma.pager");         // subtle workspace indicator (center)
-topPanel.addWidget("org.kde.plasma.panelspacer");
-topPanel.addWidget("org.kde.plasma.systemtray");    // network / bluetooth / audio / battery ...
-topPanel.addWidget("org.kde.plasma.digitalclock");
+var showAppMenu = "@TOPBAR_SHOW_APP_MENU@";
+var showPager = "@TOPBAR_SHOW_PAGER@";
+var showTray = "@TOPBAR_SHOW_TRAY@";
+var showClock = "@TOPBAR_SHOW_CLOCK@";
+if (showAppMenu.indexOf("@") !== -1 || showAppMenu === "true") {
+    topPanel.addWidget("org.kde.plasma.appmenu");       // Global Menu (app menus + fallback)
+    topPanel.addWidget("org.kde.plasma.panelspacer");
+}
+if (showPager.indexOf("@") !== -1 || showPager === "true") {
+    topPanel.addWidget("org.kde.plasma.pager");         // subtle workspace indicator (center)
+    topPanel.addWidget("org.kde.plasma.panelspacer");
+}
+if (showTray.indexOf("@") !== -1 || showTray === "true") {
+    topPanel.addWidget("org.kde.plasma.systemtray");    // network / bluetooth / audio / battery ...
+}
+if (showClock.indexOf("@") !== -1 || showClock === "true") {
+    topPanel.addWidget("org.kde.plasma.digitalclock");
+}
 log.push("top bar ok (" + topPanel.location + ", h=" + topPanel.height + ")");
 
 // ---- Phase 3: DOCK (macOS dock analog) ----
