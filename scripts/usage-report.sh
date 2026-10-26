@@ -4,12 +4,10 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CFG="$HOME/.config"
 
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BOLD='\033[1m'
 NC='\033[0m'
 

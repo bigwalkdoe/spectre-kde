@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034
+# shellcheck disable=SC2034,SC1090,SC2046
 # spectre-kde -- health.sh
 # Comprehensive system health dashboard
 
@@ -6,11 +8,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
@@ -79,7 +76,7 @@ echo -e "${BOLD}[Backups]${NC}"
 BK_COUNT=$(ls -1d "$HOME/.config/kde-backups/"*/ 2>/dev/null | wc -l)
 echo -e "  Count: $BK_COUNT"
 if [ "$BK_COUNT" -gt 0 ]; then
-    echo -e "  Latest: $(basename $(ls -1dt "$HOME/.config/kde-backups/"*/ 2>/dev/null | head -1))"
+    echo -e "  Latest: $(basename "$(ls -1dt "$HOME/.config/kde-backups/"*/ 2>/dev/null | head -1)")"
 fi
 echo ""
 

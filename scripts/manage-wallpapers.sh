@@ -9,7 +9,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WALLPAPER_DIR="$HOME/.local/share/wallpapers/kde-setup-02"
 VENDORED_DIR="$ROOT/assets/wallpapers"
 CONFIG="$ROOT/scripts/wallpapers-config"
-DEFAULT_WALLPAPER="wavy_lines_v02_5120x2880.png"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -100,6 +99,7 @@ case "${1:-list}" in
     list)
         echo -e "${BLUE}Per-monitor wallpaper assignments:${NC}"
         echo "=============================="
+        # shellcheck disable=SC1090
         source "$CONFIG"
         for i in 1 2 3 4 5 6 7 8 9 10; do
             eval "val=\"\$WALLPAPER_$i\""

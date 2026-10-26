@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034
 # spectre-kde -- fix-issues.sh
 # Automatically fix common issues
 
@@ -8,7 +9,6 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -18,7 +18,6 @@ echo -e "${BLUE}╚════════════════════�
 echo ""
 
 fixed=0
-issues=0
 
 # Fix 1: Ensure scripts are executable
 echo -e "${YELLOW}[1/6]${NC} Checking script permissions..."

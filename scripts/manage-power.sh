@@ -5,7 +5,6 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -31,7 +30,7 @@ status() {
     echo ""
     if command -v upower >/dev/null 2>&1; then
         echo -e "${BLUE}Battery:${NC}"
-        upower -i $(upower -e | grep BAT | head -1) 2>/dev/null | grep -E "state|percentage|time to" || echo "  no battery or unknown"
+        upower -i "$(upower -e | grep BAT | head -1)" 2>/dev/null | grep -E "state|percentage|time to" || echo "  no battery or unknown"
     fi
     echo "=========================="
 }
