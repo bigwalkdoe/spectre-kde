@@ -110,6 +110,7 @@ spectre-kde/
 │   ├── manage-notifications.sh notification/DND management
 │   ├── diff-config.sh         compare live config with repo snapshots
 │   ├── manage-power.sh       power profile management (performance/balanced/powersave)
+│   ├── export-config.sh     export full live config to tarball
 │   ├── toggle-theme.sh  switch light <-> dark from the current marker
 │   ├── export-profile.sh / import-profile.sh   save/restore a named config profile
 │   └── probe-panels.js  read-only panel/widget probe (detect.sh + verify.sh)
