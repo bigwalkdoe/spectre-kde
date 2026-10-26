@@ -109,6 +109,7 @@ spectre-kde/
 │   ├── manage-fonts.sh        install/list/exclude fonts, rebuild cache
 │   ├── manage-notifications.sh notification/DND management
 │   ├── diff-config.sh         compare live config with repo snapshots
+│   ├── manage-power.sh       power profile management (performance/balanced/powersave)
 │   ├── toggle-theme.sh  switch light <-> dark from the current marker
 │   ├── export-profile.sh / import-profile.sh   save/restore a named config profile
 │   └── probe-panels.js  read-only panel/widget probe (detect.sh + verify.sh)
