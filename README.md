@@ -83,6 +83,7 @@ spectre-kde/
 ├── scripts/restore-backup.sh   the single restore implementation (shared)
 ├── detect.sh            non-destructive environment inventory
 ├── doctor.sh            dependency/asset diagnosis with suggested fixes
+├── health.sh            comprehensive system health dashboard
 ├── verify.sh            [--no-health] PASS/FAIL verification (files + live session + health)
 ├── assets/wallpapers/   vendored 5K wallpaper (generated; applied by apply.sh if missing or stale)
 ├── config/              diagnostic snapshots of the live config (see below)
