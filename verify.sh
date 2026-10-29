@@ -217,9 +217,15 @@ if [ -z "$DOCK_PID" ]; then
   FAILED=$((FAILED+1))
 else
   echo "  dock panel id: $DOCK_PID"
-  AL="$(rc_panel "$DOCK_PID" alignment)"
+  # Alignment: Plasma only flushes the alignment key to plasmashellrc on shell
+  # exit, so after a quick update (no restart) the on-disk key can be missing
+  # even though the live shell is centered. The live probe is authoritative;
+  # fall back to plasmashellrc when the probe doesn't report it.
+  PROBE_AL="$(printf '%s\n' "$PROBE" | sed -n 's/^bottom;.*;align=\([^;]*\).*pid='"$DOCK_PID"$'/'"\1"'/p' | tail -1)"
+  AL="${PROBE_AL:-$(rc_panel "$DOCK_PID" alignment)}"
   case "$AL" in
-    ''|*[^0-9]*) AL_FAIL=1 ;;
+    center) echo "PASS  dock is centered (alignment=center from live probe)"; AL_FAIL=0 ;;
+    ''|*[^0-9]*) echo "FAIL  dock is centered  (no alignment reported by probe or plasmashellrc)"; AL_FAIL=1 ;;
     *) if [ $((AL & 4)) -eq 4 ]; then
          echo "PASS  dock is centered (alignment=$AL, Qt::AlignHCenter set)"; AL_FAIL=0
        else
@@ -267,18 +273,39 @@ else
 fi
 
 echo "--- theme ---"
-# Determine the active mode from the look-and-feel actually in use; both the
-# light (Orchis) and dark (Orchis-dark) variants must be independently verified.
+# Determine the active mode from the Global Theme actually applied. The Global
+# Theme ([KDE] LookAndFeelPackage) is what selects colors/icons/GTK, so it is the
+# authoritative source. Do NOT use plasmarc [Theme] name for this: that key is the
+# Plasma desktop style, and when it is absent KConfig falls back to
+# ~/.config/kdedefaults/plasmarc - which can say "Orchis" while the applied
+# Global Theme is Orchis-dark. An interrupted apply left exactly that state, and
+# verify then expected light GTK/icons on a dark session, turning one recoverable
+# mismatch into six unrelated failures.
 Q(){ q plasmarc Theme name; }
-LNF="$(Q)"
+PLASMA_STYLE="$(Q)"
+LNF_PKG="$(q kdeglobals KDE LookAndFeelPackage)"
+case "$LNF_PKG" in
+  com.github.vinceliuice.Orchis)      LNF=Orchis ;;
+  com.github.vinceliuice.Orchis-dark) LNF=Orchis-dark ;;
+  *) LNF="$PLASMA_STYLE" ;;
+esac
 SUPPORTED="no"
 case "$LNF" in
   Orchis)      SUPPORTED="yes"; EXP_LNF=com.github.vinceliuice.Orchis;      EXP_COLOR=Orchis;     EXP_ICONS=FairyWren_Light; EXP_CURSOR=Bibata-Modern-Ice;  EXP_GTK=Breeze;       EXP_DECO=__aurorae__svg__Orchis ;;
   Orchis-dark) SUPPORTED="yes"; EXP_LNF=com.github.vinceliuice.Orchis-dark; EXP_COLOR=OrchisDark; EXP_ICONS=FairyWren_Dark;  EXP_CURSOR=Bibata-Modern-Ice; EXP_GTK=Orchis-Dark; EXP_DECO=__aurorae__svg__Orchis-dark ;;
-  *) EXP_LNF="($LNF)"; EXP_COLOR="($LNF)"; EXP_ICONS="($LNF)"; EXP_CURSOR="($LNF)"; EXP_GTK="($LNF)"; EXP_DECO="($LNF)"; echo "note: unknown look-and-feel '$LNF' (expected Orchis or Orchis-dark)"; ;;
+  *) EXP_LNF="($LNF)"; EXP_COLOR="($LNF)"; EXP_ICONS="($LNF)"; EXP_CURSOR="($LNF)"; EXP_GTK="($LNF)"; EXP_DECO="($LNF)"; echo "note: unknown look-and-feel '$LNF' (expected Orchis or Orchis-dark)" ;;
 esac
-# Persisted for the reboot-persistence check further down.
-SFX="$(printf '%s' "$LNF" | sed -e 's/.*-dark/dark/' -e 's/.*/light/')"
+# The desktop style and the Global Theme are applied as a pair. An empty
+# plasmarc is normal (KConfig falls back to kdedefaults), so only a non-empty
+# value that disagrees with the Global Theme is a failure.
+CHK "plasma style matches global theme" "$LNF" "${PLASMA_STYLE:-$LNF}"
+# Persisted for the reboot-persistence check further down. The previous sed
+# pipeline ('s/.*-dark/dark/' then 's/.*/light/') always produced "light", so a
+# dark apply was checked against the light mode's marker.
+case "$LNF" in
+  *-dark) SFX=dark ;;
+  *)      SFX=light ;;
+esac
 CHK "look-and-feel is a supported mode" "yes" "$SUPPORTED"
 CHK "global theme package" "$EXP_LNF" "$(q kdeglobals KDE LookAndFeelPackage)"
 CHK "auto theme switching off" "false" "$(q kdeglobals KDE AutomaticLookAndFeel)"

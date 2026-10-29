@@ -9,6 +9,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 
 BOLD='\033[1m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
 clear
@@ -28,8 +29,8 @@ echo ""
 
 # Theme
 echo -e "${BOLD}[Theme]${NC}"
-THEME="$(kreadconfig6 --file plasmarc --group Theme --key name 2>/dev/null || echo 'unknown')"
-echo -e "  Look & Feel: $THEME"
+echo -e "  Global Theme: $(kreadconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage 2>/dev/null || echo 'unknown')"
+echo -e "  Plasma Style: $(kreadconfig6 --file plasmarc --group Theme --key name 2>/dev/null || echo 'unknown')"
 echo -e "  Colors: $(kreadconfig6 --file kdeglobals --group General --key ColorScheme 2>/dev/null || echo 'unknown')"
 echo -e "  Icons: $(kreadconfig6 --file kdeglobals --group Icons --key Theme 2>/dev/null || echo 'unknown')"
 echo -e "  Cursor: $(kreadconfig6 --file kcminputrc --group Mouse --key cursorTheme 2>/dev/null || echo 'unknown')"

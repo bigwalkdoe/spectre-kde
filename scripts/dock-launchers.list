@@ -12,11 +12,16 @@
 # once. Use that where distros and third-party repos disagree on the id.
 
 org.kde.dolphin.desktop                  # Files
-org.kde.konsole.desktop                  # Terminal
-org.mozilla.firefox.desktop              # Web
-com.google.Chrome.desktop                # Web
+virt-manager.desktop                     # Virtual Machines
 com.microsoft.VSCode.desktop|code.desktop # VS Code (the RPM ships the long id)
+cursor.desktop                           # Cursor
+nvim.desktop                             # Neovim
 md.obsidian.Obsidian.desktop             # Obsidian
 org.telegram.desktop.desktop             # Telegram (upstream id really ends in .desktop.desktop)
 com.spotify.Client.desktop               # Spotify
-binance.desktop                          # Binance
+vlc.desktop                              # VLC
+com.google.Chrome.desktop                # Web
+org.mozilla.firefox.desktop              # Web
+org.torproject.torbrowser-launcher.desktop # Tor Browser
+org.kde.konsole.desktop                  # Terminal
+terminator.desktop                       # Terminal

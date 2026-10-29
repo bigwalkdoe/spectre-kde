@@ -25,9 +25,9 @@ ERRORS=0
 WARNS=0
 OKS=0
 
-ok() { echo -e "  ${GREEN}✓${NC} $1"; ((OKS++)); }
-warn() { echo -e "  ${YELLOW}⚠${NC} $1"; ((WARNS++)); }
-err() { echo -e "  ${RED}✗${NC} $1"; ((ERRORS++)); }
+ok() { echo -e "  ${GREEN}✓${NC} $1"; OKS=$((OKS + 1)); }
+warn() { echo -e "  ${YELLOW}⚠${NC} $1"; WARNS=$((WARNS + 1)); }
+err() { echo -e "  ${RED}✗${NC} $1"; ERRORS=$((ERRORS + 1)); }
 
 echo -e "${BOLD}${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BOLD}${BLUE}║              spectre-kde Preflight Validation               ║${NC}"

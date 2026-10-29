@@ -12,16 +12,21 @@ echo "╚═══════════════════════�
 echo ""
 
 # ---- theme ---------------------------------------------------------------
-# Prefer what the session is actually running over the marker files: a theme
-# switched from System Settings leaves the markers alone, so the marker alone
-# would report "Dark" over a light session.
-THEME="$(kreadconfig6 --file plasmarc --group Theme --key name 2>/dev/null || true)"
+# Prefer the applied Global Theme over the marker files: a theme switched from
+# System Settings leaves the markers alone, so the marker alone would report
+# "Dark" over a light session. plasmarc [Theme] name is only the Plasma desktop
+# style; when it is absent KConfig falls back to kdedefaults, which can disagree
+# with the Global Theme and made this report "Light" over a dark session.
+LNF_PKG="$(kreadconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage 2>/dev/null || true)"
+PLASMA_STYLE="$(kreadconfig6 --file plasmarc --group Theme --key name 2>/dev/null || true)"
+LNF_NAME="${LNF_PKG#com.github.vinceliuice.}"
 echo "🎨 Theme:"
-case "$THEME" in
-    *-dark) echo "   Current: Dark ($THEME)" ;;
-    "")     echo "   Current: Unknown (plasmarc has no [Theme] name)" ;;
-    *)      echo "   Current: Light ($THEME)" ;;
+case "$LNF_PKG" in
+    *-dark) echo "   Current: Dark ($LNF_NAME)" ;;
+    "")     echo "   Current: Unknown (kdeglobals has no [KDE] LookAndFeelPackage)" ;;
+    *)      echo "   Current: Light ($LNF_NAME)" ;;
 esac
+echo "   Plasma style: ${PLASMA_STYLE:-unknown}"
 # The marker records which mode apply.sh last verified; it is not the same thing.
 for m in light dark; do
     [ -f "$ROOT/.applied-$m" ] || continue

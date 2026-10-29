@@ -4,8 +4,13 @@
 // both detect.sh (human inventory) and verify.sh (PASS/FAIL checks).
 //
 // Output (one line per panel, '|'-joined; parse in bash):
-//   count=<n>|panelids=<id,...>|panelids|<location>;h=<height>;float=<true|false>;widgets=<type,...>
+//   count=<n>|panelids=<id,...>|panelids|<location>;h=<height>;float=<true|false>;align=<n>;widgets=<type,...>
 // Locations are the stable Plasma strings: top|bottom|left|right|desktop.
+//
+// `align` is the live Qt::Alignment value from the scripting API. Plasma only
+// flushes alignment to plasmashellrc on shell exit, so after a quick update
+// (no restart) the on-disk key can be missing even though the live shell is
+// centered; the live probe is authoritative here.
 //
 // panelids= is the LIVE panel id set. Callers need it because plasmashellrc on
 // disk lags the running shell and can transiently contain [PlasmaViews][Panel N]
@@ -26,7 +31,7 @@ for (var i = 0; i < ids.length; i++) {
         if (wid) { wtypes.push(wid.type); }
     }
     log.push(p.location + ";h=" + Math.round(p.height) + ";float=" + p.floating +
-             ";widgets=" + wtypes.join(",") + ";pid=" + p.id);
+             ";align=" + p.alignment + ";widgets=" + wtypes.join(",") + ";pid=" + p.id);
 }
 
 print(log.join("|"));
