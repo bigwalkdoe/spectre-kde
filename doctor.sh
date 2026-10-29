@@ -24,7 +24,7 @@ check() {
         echo -e "${GREEN}OK${NC}"
     else
         echo -e "${RED}FAIL${NC}"
-        ((ERRORS++))
+        ERRORS=$((ERRORS + 1))
         if [ -n "$fix_msg" ]; then
             echo -e "  ${YELLOW}Fix:${NC} $fix_msg"
         fi
@@ -41,7 +41,7 @@ warn() {
         echo -e "${GREEN}OK${NC}"
     else
         echo -e "${YELLOW}WARN${NC}"
-        ((WARNINGS++))
+        WARNINGS=$((WARNINGS + 1))
         if [ -n "$fix_msg" ]; then
             echo -e "  ${YELLOW}Suggestion:${NC} $fix_msg"
         fi
@@ -61,7 +61,9 @@ echo ""
 echo -e "${BLUE}Required Tools${NC}"
 check "bash" "command -v bash" "Install bash"
 check "plasmashell" "command -v plasmashell" "Install KDE Plasma"
-check "qdbus6 or qdbus" "command -v qdbus6 || command -v qdbus" "Install qt-tools"
+check "gdbus" "command -v gdbus" "Install glib2"
+check "busctl" "command -v busctl" "Install systemd"
+warn "qdbus6 or qdbus (optional)" "command -v qdbus6 || command -v qdbus" "Install qt6-qttools for the manage-* helper scripts"
 check "kwriteconfig6" "command -v kwriteconfig6" "Install kde-cli-tools"
 check "plasma-apply-lookandfeel" "command -v plasma-apply-lookandfeel" "Install plasma-workspace"
 echo ""

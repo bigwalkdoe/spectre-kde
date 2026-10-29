@@ -60,7 +60,7 @@ find_app() {
                 [ -n "${name:-}" ] && echo -e "  ${BLUE}Name:${NC} $name"
                 echo -e "  ${YELLOW}Path:${NC} $file"
                 echo ""
-                ((found++))
+                found=$((found + 1))
             fi
         done < <(find "$dir" -name "*.desktop" -print0 2>/dev/null)
     done
