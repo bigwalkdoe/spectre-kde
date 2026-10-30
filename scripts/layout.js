@@ -28,6 +28,7 @@ for (var i = 0; i < ids.length; i++) {
 // Flush, full-width, 30 px tall. Left: global menu. Center: workspace pager.
 // Right: system tray + clock. Native widgets only.
 var topPanel = new Panel;
+topPanel.screen = 0;
 topPanel.location = "top";
 var topHeightMult = "@TOPBAR_HEIGHT_MULTIPLIER@";
 if (topHeightMult.indexOf("@") !== -1) topHeightMult = "10/6";
@@ -71,6 +72,7 @@ log.push("top bar ok (" + topPanel.location + ", h=" + topPanel.height + ")");
 // ---- Phase 3: DOCK (macOS dock analog) ----
 // Configurable via dock-config. Defaults to bottom floating centered dock.
 var dock = new Panel;
+dock.screen = 0;
 // Try to read dock config from environment if set by apply.sh
 var dockPos = "@DOCK_POSITION@";
 if (dockPos.indexOf("@") !== -1) dockPos = "bottom";
