@@ -66,6 +66,17 @@ For first-time setup, run `./welcome.sh` for a guided tour, or `./doctor.sh` to 
 
 ---
 
+## Testing
+
+```bash
+./scripts/run-tests.sh
+```
+
+Runs every `scripts/test-*.sh` suite and prints a summary. The suites stub the
+KDE tools they need and use temporary directories, so no live Plasma session is
+required. CI uses the same entry point, so a newly added `test-*.sh` file runs
+on every push automatically.
+
 ## License
 
 MIT — See [LICENSE](LICENSE). Scripts, documentation, and the vendored wallpaper are covered. Orchis, FairyWren, Bibata, and SDDM themes are from their respective upstream projects.

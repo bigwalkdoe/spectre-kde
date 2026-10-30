@@ -26,15 +26,33 @@ show_header() {
 
 show_status() {
     echo -e "${BOLD}Quick Status:${NC}"
-    if [ -f "$ROOT/.applied-dark" ]; then
-        echo -e "  Theme: ${BLUE}Dark (Orchis-dark)${NC}"
-    elif [ -f "$ROOT/.applied-light" ]; then
-        echo -e "  Theme: ${YELLOW}Light (Orchis)${NC}"
-    else
-        echo -e "  Theme: ${RED}Not applied or unknown${NC}"
-    fi
+    # The Global Theme is authoritative (same as toggle-theme.sh and
+    # verify.sh). Marker files only record the last verified apply, so they
+    # are a fallback for when kdeglobals is unavailable.
+    local lnf_pkg
+    lnf_pkg="$(kreadconfig6 --file "$HOME/.config/kdeglobals" --group KDE --key LookAndFeelPackage 2>/dev/null || true)"
+    case "$lnf_pkg" in
+        *Orchis-dark)
+            echo -e "  Theme: ${BLUE}Dark (Orchis-dark)${NC}"
+            ;;
+        *Orchis)
+            echo -e "  Theme: ${YELLOW}Light (Orchis)${NC}"
+            ;;
+        "")
+            if [ -f "$ROOT/.applied-dark" ]; then
+                echo -e "  Theme: ${BLUE}Dark (Orchis-dark, from marker)${NC}"
+            elif [ -f "$ROOT/.applied-light" ]; then
+                echo -e "  Theme: ${YELLOW}Light (Orchis, from marker)${NC}"
+            else
+                echo -e "  Theme: ${RED}Not applied or unknown${NC}"
+            fi
+            ;;
+        *)
+            echo -e "  Theme: ${RED}Unknown ($lnf_pkg)${NC}"
+            ;;
+    esac
     local backup_count
-    backup_count=$(ls -1d "$HOME/.config/kde-backups/"*/ 2>/dev/null | wc -l)
+    backup_count=$(find "$HOME/.config/kde-backups" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l || true)
     echo -e "  Backups: $backup_count available"
     echo ""
 }
@@ -68,14 +86,14 @@ show_menu() {
     echo -e "${YELLOW}MAINTENANCE${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo -e "${GREEN}17)${NC} Create Backup"
-    echo -e "${GREEN}18)${NC} Rollback to Previous Backup"
-    echo -e "${GREEN}19)${NC} Sync Current Config to Repo"
-    echo -e "${GREEN}20)${NC} Detect Environment"
-    echo -e "${GREEN}21)${NC} Export Current Config as Profile"
-    echo -e "${GREEN}22)${NC} Import Configuration Profile"
-    echo -e "${GREEN}23)${NC} Install Dependencies"
-    echo -e "${GREEN}24)${NC} Reset/Restore Options"
+    echo -e "${GREEN}18)${NC} Create Backup"
+    echo -e "${GREEN}19)${NC} Rollback to Previous Backup"
+    echo -e "${GREEN}20)${NC} Sync Current Config to Repo"
+    echo -e "${GREEN}21)${NC} Detect Environment"
+    echo -e "${GREEN}22)${NC} Export Current Config as Profile"
+    echo -e "${GREEN}23)${NC} Import Configuration Profile"
+    echo -e "${GREEN}24)${NC} Install Dependencies"
+    echo -e "${GREEN}25)${NC} Reset/Restore Options"
     echo ""
     echo -e "${RED}0)${NC} Exit"
     echo ""

@@ -16,7 +16,24 @@ KWINRC="$WORK/.config/kwinrc"
 mkdir -p "$(dirname "$KWINRC")"
 touch "$KWINRC"
 
-printf '#!/bin/sh\n# stub kreadconfig6: --file <file> --group <group> --key <key>\nfile=""; key=""\nwhile [ $# -gt 0 ]; do\n  case "$1" in\n    --file) shift; file="$1" ;;\n    --key) shift; key="$1" ;;\n    *) ;; esac; shift\ndone\ngrep "^${key}=" "$file" 2>/dev/null | cut -d= -f2- || true\n' > "$WORK/bin/kreadconfig6"
+cat > "$WORK/bin/kreadconfig6" <<'STUB'
+#!/bin/sh
+# stub kreadconfig6: --file <file> --group <group> --key <key>
+# Like the real tool, a bare config name (kwinrc) resolves under $HOME/.config
+# and a missing key exits non-zero so callers can apply their fallback.
+file=""; key=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --file) shift; [ "$1" = "kwinrc" ] && file="$HOME/.config/kwinrc" || file="$1" ;;
+    --key) shift; key="$1" ;;
+    *) ;;
+  esac
+  shift
+done
+val="$(grep "^${key}=" "$file" 2>/dev/null | head -1 | cut -d= -f2-)"
+[ -n "$val" ] || exit 1
+printf '%s\n' "$val"
+STUB
 chmod +x "$WORK/bin/kreadconfig6"
 
 printf '#!/bin/sh\n# stub kwriteconfig6: --file <file> --key <key> <value>\n# manage-nightlight.sh passes --file kwinrc (bare name), map to $HOME/.config/kwinrc\nfile=""; key=""; val=""\nwhile [ $# -gt 0 ]; do\n  case "$1" in\n    --file) shift; [ "$1" = "kwinrc" ] && file=\"$HOME/.config/kwinrc\" || file=\"$1\" ;;\n    --key) shift; key="$1" ;;\n    *) val="$1" ;;\n  esac; shift\ndone\ntmp=\"$(mktemp)\"\n[ -f \"$file\" ] && grep -v \"^${key}=\" \"$file\" > \"$tmp\"\necho \"${key}=${val}\" >> \"$tmp\"\nmv \"$tmp\" \"$file\"\n' > "$WORK/bin/kwriteconfig6"
