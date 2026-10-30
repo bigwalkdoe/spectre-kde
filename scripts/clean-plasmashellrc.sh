@@ -3,7 +3,6 @@
 # Remove stale [PlasmaViews][Panel N] sections from plasmashellrc for panels
 # that no longer exist in plasma-org.kde.plasma.desktop-appletsrc.
 set -u
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RC="$HOME/.config/plasmashellrc"
 APP="$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
 [ -f "$RC" ] || exit 0
