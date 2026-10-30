@@ -75,5 +75,8 @@ echo -e "${YELLOW}Setting panel visibility (dodge windows)...${NC}"
 bash "$ROOT/scripts/set-panel-visibility.sh" "$LAYOUT_OUT" 2 \
   || { echo "Failed to set panel visibility"; exit 1; }
 
+echo -e "${YELLOW}Cleaning stale plasmashellrc entries...${NC}"
+bash "$ROOT/scripts/clean-plasmashellrc.sh" || true
+
 echo -e "${GREEN}✓ Quick update complete!${NC}"
 echo "Changes to dock/apps/tray should be applied immediately."
