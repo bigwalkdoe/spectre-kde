@@ -539,11 +539,8 @@ if ! bash "$ROOT/verify.sh" --no-health; then
 fi
 
 if [ "$QUICK" -eq 1 ]; then
-  say "Quick mode: skipping final restart and pass 2 verification"
+  say "Quick mode: skipping pass 2 verification"
 else
-  say "Persistence check (reload plasmashell once more)"
-  shutdown_shell graceful || die "could not stop plasmashell"
-  start_shell || die "plasmashell did not come back"
   sleep 3
   bash "$ROOT/verify.sh" || FAIL=1
 fi

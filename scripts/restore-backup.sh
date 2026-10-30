@@ -22,7 +22,8 @@
 AFFECTED=(
   plasma-org.kde.plasma.desktop-appletsrc plasmarc plasmashellrc kdeglobals kwinrc
   kglobalshortcutsrc kcminputrc ksplashrc dolphinrc gwenviewrc kwinrulesrc
-  kwinoutputconfig.json plasma-localerc
+  kwinoutputconfig.json plasma-localerc baloofilerc plasma-notifications.conf
+  powermanagementprofilesrc
 )
 ORCHIS_LNFS="com.github.vinceliuice.Orchis com.github.vinceliuice.Orchis-dark"
 
