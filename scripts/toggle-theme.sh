@@ -1,34 +1,30 @@
 #!/usr/bin/env bash
 # spectre-kde -- toggle-theme.sh
 # Quick toggle between light and dark themes
+#
+# Mode detection mirrors verify.sh: the Global Theme
+# ([KDE] LookAndFeelPackage) is authoritative because it is what actually
+# selects colors/icons/GTK. Marker files (.applied-dark/.applied-light) are
+# only a fallback for when kdeglobals is unavailable.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# Check current theme
-if [ -f "$ROOT/.applied-dark" ] && [ ! -f "$ROOT/.applied-light" ]; then
-    echo "Currently dark, switching to light..."
+# Determine the active mode from the Global Theme actually applied.
+LNF_PKG="$(kreadconfig6 --file "$HOME/.config/kdeglobals" --group KDE --key LookAndFeelPackage 2>/dev/null || true)"
+
+case "$LNF_PKG" in
+  *Orchis-dark)
+    echo "Detected dark theme, switching to light..."
     cd "$ROOT" && ./apply.sh --light
-elif [ -f "$ROOT/.applied-light" ] && [ ! -f "$ROOT/.applied-dark" ]; then
-    echo "Currently light, switching to dark..."
+    ;;
+  *Orchis|"")
+    echo "Detected light theme or unknown, switching to dark..."
     cd "$ROOT" && ./apply.sh --dark
-elif [ -f "$ROOT/.applied-light" ] && [ -f "$ROOT/.applied-dark" ]; then
-    # Both exist, check which is newer
-    if [ "$ROOT/.applied-dark" -nt "$ROOT/.applied-light" ]; then
-        echo "Currently dark, switching to light..."
-        cd "$ROOT" && ./apply.sh --light
-    else
-        echo "Currently light, switching to dark..."
-        cd "$ROOT" && ./apply.sh --dark
-    fi
-else
-    # No marker, detect from kdeglobals
-    if grep -q "Orchis-dark" "$HOME/.config/kdeglobals" 2>/dev/null; then
-        echo "Detected dark theme, switching to light..."
-        cd "$ROOT" && ./apply.sh --light
-    else
-        echo "Detected light theme or unknown, switching to dark..."
-        cd "$ROOT" && ./apply.sh --dark
-    fi
-fi
+    ;;
+  *)
+    echo "Unknown look-and-feel '$LNF_PKG', defaulting to dark..."
+    cd "$ROOT" && ./apply.sh --dark
+    ;;
+esac

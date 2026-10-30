@@ -123,6 +123,30 @@ for f in scripts/dock-config scripts/topbar-config config/applied-kwinrulesrc.co
         warn "$f missing"
     fi
 done
+
+# Validate dock-config required keys
+DOCK_CFG="$ROOT/scripts/dock-config"
+if [ -f "$DOCK_CFG" ]; then
+    for key in DOCK_POSITION DOCK_HEIGHT_MULTIPLIER DOCK_FLOATING DOCK_CENTERED; do
+        if grep -q "^${key}=" "$DOCK_CFG" 2>/dev/null; then
+            ok "dock-config: $key set"
+        else
+            warn "dock-config: $key not set (using apply.sh default)"
+        fi
+    done
+fi
+
+# Validate topbar-config required keys
+TOPBAR_CFG="$ROOT/scripts/topbar-config"
+if [ -f "$TOPBAR_CFG" ]; then
+    for key in TOPBAR_HEIGHT_MULTIPLIER TOPBAR_SHOW_APP_MENU TOPBAR_SHOW_PAGER TOPBAR_SHOW_TRAY TOPBAR_SHOW_CLOCK; do
+        if grep -q "^${key}=" "$TOPBAR_CFG" 2>/dev/null; then
+            ok "topbar-config: $key set"
+        else
+            warn "topbar-config: $key not set (using apply.sh default)"
+        fi
+    done
+fi
 echo ""
 
 # --- Disk space / permissions ---
