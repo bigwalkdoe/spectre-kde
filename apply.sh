@@ -498,6 +498,15 @@ say "Panel visibility mode (fullscreen-aware)"
 bash "$ROOT/scripts/set-panel-visibility.sh" "$LAYOUT_OUT" "$PANEL_VISIBILITY" \
   || die "could not set panel visibility"
 
+say "Lock screen: sync enterprise styling"
+SHELL_LOCAL="$HOME/.local/share/plasma/shells/org.kde.plasma.desktop"
+if [ ! -d "$SHELL_LOCAL" ]; then
+  cp -a /usr/share/plasma/shells/org.kde.plasma.desktop "$SHELL_LOCAL" 2>/dev/null || true
+fi
+if [ -f "$ROOT/assets/lockscreen/MainBlock.qml" ] && [ -d "$SHELL_LOCAL/contents/lockscreen" ]; then
+  cp "$ROOT/assets/lockscreen/MainBlock.qml" "$SHELL_LOCAL/contents/lockscreen/MainBlock.qml" && echo "synced lock screen styling"
+fi
+
 say "Wallpaper"
 WALLPAPER_DIR="$HOME/.local/share/wallpapers/kde-setup-02"
 WALLPAPER_NAME="wavy_lines_v02_5120x2880.png"
