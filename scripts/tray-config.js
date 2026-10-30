@@ -1,10 +1,10 @@
 // spectre-kde — system tray curation (Plasma 6 scripting API)
 //
-// Curates which status items are pinned in the top-bar system tray, in order:
-//   clipboard, network, bluetooth, volume, brightness, battery, notifications
-// All other known tray items stay available in the tray's overflow menu.
-// In Plasma 6.7 the tray's [General] extraItems/knownItems config lives directly
-// on the org.kde.plasma.systemtray applet, so we write it there.
+// Curates which status items are pinned in the top-bar system tray, in order.
+// Only pin items that are reliably available on this hardware; leave the rest
+// in knownItems so Plasma surfaces them (in overflow or on the bar) when their
+// backing service/device is present. Pinning an item whose service is absent
+// makes the whole tray report "unavailable" in Plasma 6.7.
 
 var log = [];
 var tray = null;
@@ -31,9 +31,9 @@ if (!tray) {
         "org.kde.plasma.networkmanagement," +
         "org.kde.plasma.bluetooth," +
         "org.kde.plasma.volume," +
+        "org.kde.plasma.brightness," +
+        "org.kde.plasma.battery," +
         "org.kde.plasma.notifications");
-    // No reloadConfig(): Plasma 6.7 re-reads on its own; forcing a reload
-    // occasionally nulls tray items and makes the whole tray "unavailable".
     log.push("systemtray curated");
 }
 
