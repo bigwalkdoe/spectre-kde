@@ -197,7 +197,7 @@ SessionManagementScreen {
         leftPadding: 16
         rightPadding: 16
         background: Rectangle {
-            radius: 22
+            radius: 30
             border.width: 1.5
             border.color: passwordBox.activeFocus ? "#1A73E8" : (root.loginScreenUiVisible ? "#4A90D9" : "#3A5A7A")
             color: passwordBox.activeFocus ? "#253545" : (root.loginScreenUiVisible ? "#1E2A3A" : "#151E2A")
