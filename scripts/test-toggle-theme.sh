@@ -9,7 +9,7 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 fails=0
 ok(){ printf 'ok   %s\n' "$1"; }
-no(){ printf 'FAIL %s\n       %s\n' "$1" "$2"; fails=$((fails + 1)); }
+no(){ printf 'FAIL %s\n       %s\n' "$1" "${2:-}"; fails=$((fails + 1)); }
 
 # --- stub apply.sh that records its args ---
 STUB="$WORK/apply.sh"
@@ -19,68 +19,49 @@ chmod +x "$STUB"
 run_toggle(){
   mkdir -p "$WORK/scripts"
   cp "$ROOT/scripts/toggle-theme.sh" "$WORK/scripts/toggle-theme.sh"
-  # $STUB is already $WORK/apply.sh, so toggle-theme.sh finds it directly.
+  cp "$STUB" "$WORK/apply.sh"
   ( cd "$WORK" && HOME="$WORK" bash "$WORK/scripts/toggle-theme.sh" )
 }
 
 reset_calls(){ : > "$WORK/calls.log"; }
 last_call(){ tail -1 "$WORK/calls.log" 2>/dev/null || echo "(no call)"; }
 
+set_kdeglobals_lnf(){
+  mkdir -p "$WORK/.config"
+  printf '[KDE]\nLookAndFeelPackage=%s\n' "$1" > "$WORK/.config/kdeglobals"
+}
+
 echo "=== test-toggle-theme: mode selection ==="
 
-# Case 1: only .applied-dark exists -> switch to light
-rm -f "$WORK/.applied-light" "$WORK/.applied-dark"
-touch "$WORK/.applied-dark"
+# Case 1: kdeglobals LookAndFeelPackage=Orchis-dark -> switch to light
+set_kdeglobals_lnf "com.github.vinceliuice.Orchis-dark"
 reset_calls
 run_toggle
-case "$(last_call)" in *"--light"*) ok "dark-only marker -> applies --light" ;; *) no "dark-only marker -> expected --light, got: $(last_call)" ;; esac
+case "$(last_call)" in *"--light"*) ok "Orchis-dark LNF -> applies --light" ;; *) no "Orchis-dark LNF -> expected --light, got: $(last_call)" ;; esac
 
-# Case 2: only .applied-light exists -> switch to dark
-rm -f "$WORK/.applied-light" "$WORK/.applied-dark"
-touch "$WORK/.applied-light"
+# Case 2: kdeglobals LookAndFeelPackage=Orchis -> switch to dark
+set_kdeglobals_lnf "com.github.vinceliuice.Orchis"
 reset_calls
 run_toggle
-case "$(last_call)" in *"--dark"*) ok "light-only marker -> applies --dark" ;; *) no "light-only marker -> expected --dark, got: $(last_call)" ;; esac
+case "$(last_call)" in *"--dark"*) ok "Orchis LNF -> applies --dark" ;; *) no "Orchis LNF -> expected --dark, got: $(last_call)" ;; esac
 
-# Case 3: both exist, .applied-dark newer -> switch to light
-rm -f "$WORK/.applied-light" "$WORK/.applied-dark"
-touch "$WORK/.applied-light"
-sleep 1
-touch "$WORK/.applied-dark"
+# Case 3: kdeglobals missing LookAndFeelPackage key -> default to dark
+set_kdeglobals_lnf ""
 reset_calls
 run_toggle
-case "$(last_call)" in *"--light"*) ok "both markers, dark newer -> applies --light" ;; *) no "both markers, dark newer -> expected --light, got: $(last_call)" ;; esac
+case "$(last_call)" in *"--dark"*) ok "empty LNF -> defaults to --dark" ;; *) no "empty LNF -> expected --dark, got: $(last_call)" ;; esac
 
-# Case 4: both exist, .applied-light newer -> switch to dark
-rm -f "$WORK/.applied-light" "$WORK/.applied-dark"
-touch "$WORK/.applied-dark"
-sleep 1
-touch "$WORK/.applied-light"
-reset_calls
-run_toggle
-case "$(last_call)" in *"--dark"*) ok "both markers, light newer -> applies --dark" ;; *) no "both markers, light newer -> expected --dark, got: $(last_call)" ;; esac
-
-# Case 5: no markers, HOME kdeglobals says Orchis-dark -> switch to light
-rm -f "$WORK/.applied-light" "$WORK/.applied-dark"
-mkdir -p "$WORK/.config"
-printf '[KDE]\nLookAndFeelPackage=com.github.vinceliuice.Orchis-dark\n' > "$WORK/.config/kdeglobals"
-reset_calls
-run_toggle
-case "$(last_call)" in *"--light"*) ok "no markers, kdeglobals dark -> applies --light" ;; *) no "no markers, kdeglobals dark -> expected --light, got: $(last_call)" ;; esac
-
-# Case 6: no markers, HOME kdeglobals says Orchis (light) -> switch to dark
-rm -f "$WORK/.applied-light" "$WORK/.applied-dark"
-printf '[KDE]\nLookAndFeelPackage=com.github.vinceliuice.Orchis\n' > "$WORK/.config/kdeglobals"
-reset_calls
-run_toggle
-case "$(last_call)" in *"--dark"*) ok "no markers, kdeglobals light -> applies --dark" ;; *) no "no markers, kdeglobals light -> expected --dark, got: $(last_call)" ;; esac
-
-# Case 7: no markers, no kdeglobals -> defaults to dark
-rm -f "$WORK/.applied-light" "$WORK/.applied-dark"
+# Case 4: kdeglobals file missing entirely -> default to dark
 rm -f "$WORK/.config/kdeglobals"
 reset_calls
 run_toggle
-case "$(last_call)" in *"--dark"*) ok "no markers, no kdeglobals -> defaults to --dark" ;; *) no "no markers, no kdeglobals -> expected --dark, got: $(last_call)" ;; esac
+case "$(last_call)" in *"--dark"*) ok "no kdeglobals -> defaults to --dark" ;; *) no "no kdeglobals -> expected --dark, got: $(last_call)" ;; esac
+
+# Case 5: unknown LNF -> default to dark
+set_kdeglobals_lnf "org.kde.breeze"
+reset_calls
+run_toggle
+case "$(last_call)" in *"--dark"*) ok "unknown LNF -> defaults to --dark" ;; *) no "unknown LNF -> expected --dark, got: $(last_call)" ;; esac
 
 echo "--- result ---"
 if [ "$fails" -eq 0 ]; then
