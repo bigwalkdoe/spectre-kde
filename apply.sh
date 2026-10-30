@@ -65,6 +65,7 @@ fi
 # (hidden until the mouse reaches the screen edge; fullscreen dodges the bar).
 PANEL_VISIBILITY="${PANEL_VISIBILITY:-2}"
 SPLASH="${SPLASH:-AppleSplash}"
+SDDM_THEME="${SDDM_THEME:-Orchis-Mac}"
 WALLPAPER="$HOME/.local/share/wallpapers/kde-setup-02/wavy_lines_v02_5120x2880.png"
 BACKUP=""; FAIL=0
 say(){ echo; echo "### $*"; }
@@ -328,8 +329,15 @@ else
   echo "note: SDDM config requires root; will prompt for sudo"
 fi
 $SUDO mkdir -p /etc/sddm.conf.d
-$SUDO cp "$ROOT/config/applied-sddm.conf" /etc/sddm.conf.d/theme.conf || die "sddm config"
+TMP_SDDM="$(mktemp)"
+sed "s/^Current=.*/Current=$SDDM_THEME/" "$ROOT/config/applied-sddm.conf" > "$TMP_SDDM"
+$SUDO cp "$TMP_SDDM" /etc/sddm.conf.d/theme.conf || die "sddm config"
+rm -f "$TMP_SDDM"
 $SUDO chmod 644 /etc/sddm.conf.d/theme.conf
+# Sync the SDDM theme's Login.qml so the installed greeter matches the repo.
+if [ -d "/usr/share/sddm/themes/$SDDM_THEME" ] && [ -f "$ROOT/assets/sddm-theme/$SDDM_THEME/Login.qml" ]; then
+  $SUDO cp "$ROOT/assets/sddm-theme/$SDDM_THEME/Login.qml" "/usr/share/sddm/themes/$SDDM_THEME/Login.qml" 2>/dev/null && echo "synced SDDM Login.qml"
+fi
 echo "Applied enterprise SDDM config to /etc/sddm.conf.d/theme.conf"
 
 say "Autostart: sync from scripts/autostart.list"
@@ -498,6 +506,8 @@ say "Panel visibility mode (fullscreen-aware)"
 bash "$ROOT/scripts/set-panel-visibility.sh" "$LAYOUT_OUT" "$PANEL_VISIBILITY" \
   || die "could not set panel visibility"
 
+say "Clean stale plasmashellrc entries"
+bash "$ROOT/scripts/clean-plasmashellrc.sh" || true
 say "Lock screen: sync enterprise styling"
 SHELL_LOCAL="$HOME/.local/share/plasma/shells/org.kde.plasma.desktop"
 if [ ! -d "$SHELL_LOCAL" ]; then
