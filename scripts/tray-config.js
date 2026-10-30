@@ -28,14 +28,12 @@ if (!tray) {
     tray.currentConfigGroup = ["General"];
     tray.writeConfig(
         "extraItems",
-        "org.kde.plasma.clipboard," +
         "org.kde.plasma.networkmanagement," +
         "org.kde.plasma.bluetooth," +
         "org.kde.plasma.volume," +
-        "org.kde.plasma.brightness," +
-        "org.kde.plasma.battery," +
         "org.kde.plasma.notifications");
-    tray.reloadConfig();
+    // No reloadConfig(): Plasma 6.7 re-reads on its own; forcing a reload
+    // occasionally nulls tray items and makes the whole tray "unavailable".
     log.push("systemtray curated");
 }
 
