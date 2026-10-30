@@ -28,6 +28,9 @@ FILES=(
   kwinrulesrc
   kwinoutputconfig.json
   plasma-localerc
+  baloofilerc
+  plasma-notifications.conf
+  powermanagementprofilesrc
 )
 for f in "${FILES[@]}"; do
   if [ -f "$HOME/.config/$f" ]; then
