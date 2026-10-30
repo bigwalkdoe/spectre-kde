@@ -23,13 +23,16 @@ cat > "$WORK/usr/share/applications/org.mozilla.firefox.desktop" <<'EOF'
 [Desktop Entry]
 Name=Firefox
 EOF
-cat > "$WORK/usr/share/applications/org.gnome.Calculator.desktop" <<'EOF'
-[Desktop Entry]
-Name=Calculator
-EOF
 cat > "$WORK/.local/share/applications/com.spotify.Client.desktop" <<'EOF'
 [Desktop Entry]
 Name=Spotify
+EOF
+# manage-dock.sh searches $HOME/.local/share/applications, so this app is
+# visible to it even on a runner with no KDE apps installed. The find/add
+# tests use it instead of borrowing a host app such as Firefox.
+cat > "$WORK/.local/share/applications/org.spectre.FindMe.desktop" <<'EOF'
+[Desktop Entry]
+Name=Spectre Find Me
 EOF
 
 # Fake dock-config (ROOT becomes $WORK when script is in $WORK/scripts/)
@@ -74,26 +77,31 @@ case "$OUT" in
 esac
 
 echo "=== test-manage-dock: find ==="
-OUT="$(run_dock find firefox)"
+OUT="$(run_dock find spectre)"
 case "$OUT" in
-  *"org.mozilla.firefox.desktop"*) ok "find firefox returns firefox.desktop" ;;
-  *) no "find firefox missing: $OUT" ;;
+  *"org.spectre.FindMe.desktop"*) ok "find spectre returns the fake app" ;;
+  *) no "find spectre missing: $OUT" ;;
 esac
-OUT="$(run_dock find nonexistent-app-xyz)"
+case "$OUT" in
+  *"$WORK/.local/share/applications/org.spectre.FindMe.desktop"*)
+    ok "find reports the isolated app path" ;;
+  *) no "find did not read the isolated app dir: $OUT" ;;
+esac
+OUT="$(run_dock find spectre-nonexistent-app-xyz)"
 case "$OUT" in
   *"No applications found"* ) ok "find nonexistent reports not found" ;;
   *) no "find nonexistent should report not found: $OUT" ;;
 esac
 
 echo "=== test-manage-dock: add new ==="
-run_dock add org.gnome.Calculator.desktop
-OUT="$(grep '^org.gnome.Calculator.desktop' "$WORK/scripts/dock-launchers.list")"
+run_dock add org.spectre.FindMe.desktop
+OUT="$(grep '^org.spectre.FindMe.desktop' "$WORK/scripts/dock-launchers.list")"
 case "$OUT" in
-  *"org.gnome.Calculator.desktop"*) ok "add appends Calculator to list" ;;
-  *) no "add did not append Calculator" ;;
+  *"org.spectre.FindMe.desktop"*) ok "add appends FindMe to list" ;;
+  *) no "add did not append FindMe" ;;
 esac
 case "$OUT" in
-  *"Calculator"*) ok "add includes app name comment" ;;
+  *"# Spectre Find Me"*) ok "add includes app name comment" ;;
   *) no "add missing name comment" ;;
 esac
 
