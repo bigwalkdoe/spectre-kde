@@ -39,6 +39,7 @@ printf "  %-30s %s\n" "./welcome.sh" "Getting started guide"
 printf "  %-30s %s\n" "./scripts/preflight-check.sh" "Validate before apply"
 printf "  %-30s %s\n" "./scripts/diff-config.sh" "Compare live vs repo config"
 printf "  %-30s %s\n" "./scripts/export-config.sh" "Export full config"
+printf "  %-30s %s\n" "./scripts/run-tests.sh" "Run all test suites"
 echo ""
 
 echo -e "${BLUE}Managers:${NC}"
