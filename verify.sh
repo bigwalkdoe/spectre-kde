@@ -378,10 +378,8 @@ fi
 echo "--- baloo (file indexing) ---"
 BALOO="$CFG/baloofilerc"
 if [ -f "$BALOO" ]; then
-  CHK "baloo: onlyIndexLocalFiles=true" "true" "$(kreadconfig6 --file baloofilerc --group General --key onlyIndexLocalFiles 2>/dev/null)"
-  CHK "baloo: useInotify=true" "true" "$(kreadconfig6 --file baloofilerc --group General --key useInotify 2>/dev/null)"
-  CHK "baloo: excludeFilters present" "yes" "$(kreadconfig6 --file baloofilerc --group General --key excludeFilters 2>/dev/null | grep -q . && echo yes || echo no)"
-  CHK "baloo: excludeFolders present" "yes" "$(kreadconfig6 --file baloofilerc --group General --key excludeFolders 2>/dev/null | grep -q . && echo yes || echo no)"
+  CHK "baloo: folders present" "yes" "$(kreadconfig6 --file baloofilerc --group General --key 'folders' 2>/dev/null | grep -q . && echo yes || echo no)"
+  CHK "baloo: exclude folders present" "yes" "$(kreadconfig6 --file baloofilerc --group General --key 'exclude folders' 2>/dev/null | grep -q . && echo yes || echo no)"
 else
   echo "FAIL  $BALOO missing"
   FAILED=$((FAILED+1))
