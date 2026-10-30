@@ -337,7 +337,7 @@ bash "$ROOT/scripts/manage-autostart.sh" || die "autostart sync failed"
 
 say "Baloo: file indexing (conservative, local only)"
 mkdir -p "$HOME/.config"
-cp "$ROOT/config/applied-baloofilerc.conf" "$HOME/.config/baloofilerc" || die "baloo config"
+sed "s|@HOME@|$HOME|g" "$ROOT/config/applied-baloofilerc.conf" > "$HOME/.config/baloofilerc" || die "baloo config"
 
 say "Power Management: macOS-like profiles"
 mkdir -p "$HOME/.config"
