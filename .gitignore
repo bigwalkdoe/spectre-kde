@@ -3,3 +3,5 @@
 # apply.sh concurrency lock
 .apply.lock
 profiles/
+# runtime post-apply screenshots
+screenshots/post-apply-*.png
