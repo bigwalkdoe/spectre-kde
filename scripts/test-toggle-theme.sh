@@ -12,15 +12,33 @@ ok(){ printf 'ok   %s\n' "$1"; }
 no(){ printf 'FAIL %s\n       %s\n' "$1" "${2:-}"; fails=$((fails + 1)); }
 
 # --- stub apply.sh that records its args ---
-STUB="$WORK/apply.sh"
+STUB="$WORK/stub-apply.sh"
 printf '#!/bin/sh\necho "apply called with: $*" >> "%s/calls.log"\n' "$WORK" > "$STUB"
 chmod +x "$STUB"
+
+# toggle-theme.sh reads the Global Theme through kreadconfig6. Stub it so the
+# test exercises the selection logic rather than whether KDE tools are
+# installed on the host (they are not on a plain CI runner).
+mkdir -p "$WORK/bin"
+cat > "$WORK/bin/kreadconfig6" <<'STUB'
+#!/bin/sh
+file=""; key=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --file) shift; file="$1" ;;
+    --key) shift; key="$1" ;;
+  esac
+  shift
+done
+grep "^${key}=" "$file" 2>/dev/null | head -1 | cut -d= -f2- || true
+STUB
+chmod +x "$WORK/bin/kreadconfig6"
 
 run_toggle(){
   mkdir -p "$WORK/scripts"
   cp "$ROOT/scripts/toggle-theme.sh" "$WORK/scripts/toggle-theme.sh"
   cp "$STUB" "$WORK/apply.sh"
-  ( cd "$WORK" && HOME="$WORK" bash "$WORK/scripts/toggle-theme.sh" )
+  ( cd "$WORK" && PATH="$WORK/bin:$PATH" HOME="$WORK" bash "$WORK/scripts/toggle-theme.sh" )
 }
 
 reset_calls(){ : > "$WORK/calls.log"; }
