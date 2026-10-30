@@ -60,257 +60,172 @@ SessionManagementScreen {
         loginRequest(username, password);
     }
 
-    Rectangle {
-        id: inputContainer
-        Layout.fillWidth: true
-        Layout.margins: Kirigami.Units.largeSpacing
-        Layout.preferredHeight: 60
-        visible: false // We use individual inputs below
-    }
-
-    // User avatar with subtle glow
     Item {
-        id: userAvatar
-        Layout.margins: Kirigami.Units.largeSpacing
-        Layout.preferredWidth: 80
-        Layout.preferredHeight: 80
-        visible: !showUsernamePrompt
+        Layout.fillWidth: true
+        Layout.fillHeight: false
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredWidth: Math.min(360, root.width * 0.9)
+        Layout.maximumWidth: 360
+        Layout.margins: Kirigami.Units.largeSpacing * 2
 
-        DropShadow {
-            anchors.fill: avatarContainer
-            source: avatarContainer
-            visible: parent.visible
-            radius: 14
-            samples: 25
-            color: root.loginScreenUiVisible ? "#551A73E8" : "#44000000"
-            horizontalOffset: 0
-            verticalOffset: 5
-            spread: 0.1
-            transparentBorder: true
-            z: -1
-            Behavior on color { ColorAnimation { duration: 300 } }
-        }
-
-        Rectangle {
-            id: avatarContainer
+        ColumnLayout {
             anchors.centerIn: parent
-            width: 80
-            height: 80
-            radius: 40
-            clip: true
-            scale: root.loginScreenUiVisible ? 1.0 : 0.92
-            border.width: 2
-            border.color: root.loginScreenUiVisible ? "#1A73E8" : "#3A5A7A"
-            Behavior on border.color {
-                ColorAnimation { duration: 300 }
-            }
-
-            Behavior on scale {
-                NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
-            }
-
-            Image {
-                id: avatarImage
-                anchors.fill: parent
-                source: userList.currentUserImage
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                asynchronous: true
-            }
+            width: parent.width
+            spacing: Kirigami.Units.largeSpacing
 
             Text {
-                anchors.centerIn: parent
-                visible: avatarImage.status !== Image.Ready
-                text: "U"
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: Kirigami.Units.largeSpacing
+                visible: !showUsernamePrompt && userList.selectedUser
+                text: userList.selectedUser
                 color: "#FFFFFF"
-                font.pointSize: 28
-                font.bold: true
-                opacity: root.loginScreenUiVisible ? 1.0 : 0.85
+                font.pointSize: fontSize + 4
+                font.weight: Font.Normal
+                font.family: config.Font || "Inter"
             }
-        }
-    }
 
-    // Friendly greeting, visible only when a user is selected
-    Text {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.margins: Kirigami.Units.smallSpacing
-        visible: !showUsernamePrompt
-        text: i18nd("plasma-desktop-sddm-theme", "Welcome")
-        color: "#FFFFFF"
-        font.pointSize: fontSize + 6
-        font.bold: true
-        font.family: config.Font || "Inter"
-        opacity: root.loginScreenUiVisible ? 1.0 : 0.75
-        Behavior on opacity {
-            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
-        }
-    }
+            Input {
+                id: userNameInput
+                Layout.fillWidth: true
+                Layout.preferredHeight: 44
+                Layout.topMargin: Kirigami.Units.largeSpacing
+                font.pointSize: fontSize + 1
+                font.family: config.Font || "Inter"
+                text: lastUserName
+                visible: showUsernamePrompt
+                focus: showUsernamePrompt && !lastUserName
+                placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Username")
+                placeholderTextColor: "#6B6B6B"
+                color: "#FFFFFF"
+                selectionColor: "#2563EB"
+                selectedTextColor: "#FFFFFF"
+                leftPadding: 16
+                rightPadding: 16
+                background: Rectangle {
+                    radius: 6
+                    border.width: 1
+                    border.color: userNameInput.activeFocus ? "#2563EB" : "#3F3F3F"
+                    color: "#1A1A1A"
+                    Behavior on border.color { ColorAnimation { duration: 100 } }
+                }
+                onAccepted: passwordBox.forceActiveFocus()
+            }
 
-    Input {
-        id: userNameInput
-        Layout.fillWidth: true
-        Layout.margins: Kirigami.Units.largeSpacing
-        Layout.preferredHeight: 44
-        font.pointSize: fontSize + 2
-        opacity: 1
-        text: lastUserName
-        visible: showUsernamePrompt
-        focus: showUsernamePrompt && !lastUserName
-        placeholderText: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Username")
-        placeholderTextColor: "#8A9BB0"
-        color: "#FFFFFF"
-        selectionColor: "#1A73E8"
-        selectedTextColor: "#FFFFFF"
-        leftPadding: 16
-        rightPadding: 16
-        background: Rectangle {
-            radius: 22
-            border.width: 1.5
-            border.color: userNameInput.activeFocus ? "#1A73E8" : (root.loginScreenUiVisible ? "#4A90D9" : "#3A5A7A")
-            color: userNameInput.activeFocus ? "#253545" : (root.loginScreenUiVisible ? "#1E2A3A" : "#151E2A")
-            Behavior on border.color {
-                ColorAnimation { duration: 150 }
-            }
-            Behavior on color {
-                ColorAnimation { duration: 150 }
-            }
-        }
-        onAccepted: passwordBox.forceActiveFocus()
-    }
+            Item {
+                id: passwordFieldContainer
+                Layout.fillWidth: true
+                Layout.preferredHeight: 44
+                Layout.bottomMargin: Kirigami.Units.largeSpacing
 
-    Input {
-        id: passwordBox
-        Layout.fillWidth: true
-        Layout.margins: Kirigami.Units.largeSpacing
-        Layout.preferredHeight: 44
-        font.pointSize: fontSize + 2
-        font.family: config.Font || "Inter"
-        placeholderText: (config.PasswordFieldPlaceholderText === "Password" || !config.PasswordFieldPlaceholderText) ? i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Password") : config.PasswordFieldPlaceholderText
-        focus: !showUsernamePrompt || lastUserName
-        echoMode: TextInput.Password
-        onAccepted: startLogin()
-        placeholderTextColor: "#8A9BB0"
-        passwordCharacter: (config.PasswordFieldCharacter === "" || !config.PasswordFieldCharacter) ? "●" : config.PasswordFieldCharacter
-        color: "#FFFFFF"
-        selectionColor: "#1A73E8"
-        selectedTextColor: "#FFFFFF"
-        leftPadding: 16
-        rightPadding: 16
-        background: Rectangle {
-            radius: 30
-            border.width: 1.5
-            border.color: passwordBox.activeFocus ? "#1A73E8" : (root.loginScreenUiVisible ? "#4A90D9" : "#3A5A7A")
-            color: passwordBox.activeFocus ? "#253545" : (root.loginScreenUiVisible ? "#1E2A3A" : "#151E2A")
-            Behavior on border.color {
-                ColorAnimation { duration: 150 }
-            }
-            Behavior on color {
-                ColorAnimation { duration: 150 }
-            }
-        }
+                Input {
+                    id: passwordBox
+                    anchors.fill: parent
+                    font.pointSize: fontSize + 1
+                    font.family: config.Font || "Inter"
+                    placeholderText: (config.PasswordFieldPlaceholderText === "Password" || !config.PasswordFieldPlaceholderText) ? i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Password") : config.PasswordFieldPlaceholderText
+                    focus: !showUsernamePrompt || lastUserName
+                    echoMode: TextInput.Password
+                    onAccepted: startLogin()
+                    placeholderTextColor: "#6B6B6B"
+                    passwordCharacter: (config.PasswordFieldCharacter === "" || !config.PasswordFieldCharacter) ? "●" : config.PasswordFieldCharacter
+                    color: "#FFFFFF"
+                    selectionColor: "#2563EB"
+                    selectedTextColor: "#FFFFFF"
+                    leftPadding: 16
+                    rightPadding: loginButton.width + 12
+                    background: Rectangle {
+                        radius: 6
+                        border.width: 1
+                        border.color: passwordBox.activeFocus ? "#2563EB" : "#3F3F3F"
+                        color: "#1A1A1A"
+                        Behavior on border.color { ColorAnimation { duration: 100 } }
+                    }
 
-        Keys.onEscapePressed: {
-            mainStack.currentItem.forceActiveFocus();
-        }
+                    Keys.onEscapePressed: {
+                        mainStack.currentItem.forceActiveFocus();
+                    }
 
-        Keys.onPressed: {
-            if (event.key == Qt.Key_Left && !text) {
-                userList.decrementCurrentIndex();
-                event.accepted = true
-            }
-            if (event.key == Qt.Key_Right && !text) {
-                userList.incrementCurrentIndex();
-                event.accepted = true
-            }
-        }
+                    Keys.onPressed: {
+                        if (event.key == Qt.Key_Left && !text) {
+                            userList.decrementCurrentIndex();
+                            event.accepted = true
+                        }
+                        if (event.key == Qt.Key_Right && !text) {
+                            userList.incrementCurrentIndex();
+                            event.accepted = true
+                        }
+                    }
 
-        Keys.onReleased: {
-            if (loginButton.opacity == 0 && length > 0) {
-                showLoginButton.start()
-            }
-            if (loginButton.opacity > 0 && length == 0) {
-                hideLoginButton.start()
-            }
-        }
+                    Keys.onReleased: {
+                        if (loginButton.opacity == 0 && length > 0) {
+                            showLoginButton.start()
+                        }
+                        if (loginButton.opacity > 0 && length == 0) {
+                            hideLoginButton.start()
+                        }
+                    }
 
-        Connections {
-            target: sddm
-            onLoginFailed: {
-                passwordBox.selectAll()
-                passwordBox.forceActiveFocus()
-            }
-        }
-    }
+                    Connections {
+                        target: sddm
+                        onLoginFailed: {
+                            passwordBox.selectAll()
+                            passwordBox.forceActiveFocus()
+                        }
+                    }
+                }
 
-    // macOS-style login button with hover/tap feedback
-    Item {
-        id: loginButton
-        Layout.margins: Kirigami.Units.largeSpacing
-        Layout.preferredWidth: 44
-        Layout.preferredHeight: 44
-        opacity: 0
-        visible: opacity > 0
+                Item {
+                    id: loginButton
+                    anchors.right: parent.right
+                    anchors.rightMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 36
+                    height: 36
+                    opacity: 0
+                    visible: opacity > 0
 
-        property bool pressed: false
+                    Rectangle {
+                        id: buttonBg
+                        anchors.fill: parent
+                        radius: 4
+                        color: "#2563EB"
+                        Behavior on color { ColorAnimation { duration: 80 } }
+                    }
 
-        Rectangle {
-            id: buttonBg
-            anchors.fill: parent
-            radius: 22
-            color: "#1A73E8"
-            border.width: 0
-            Behavior on color {
-                ColorAnimation { duration: 100 }
-            }
-            Behavior on scale {
-                NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
-            }
-        }
+                    Image {
+                        anchors.centerIn: parent
+                        source: "assets/login.svgz"
+                        sourceSize: Qt.size(16, 16)
+                        smooth: true
+                    }
 
-        Image {
-            anchors.centerIn: parent
-            source: "assets/login.svgz"
-            sourceSize: Qt.size(24, 24)
-            smooth: true
-        }
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onEntered: { buttonBg.color = "#1D4ED8" }
+                        onExited: { buttonBg.color = "#2563EB" }
+                        onPressed: { buttonBg.color = "#1E40AF" }
+                        onReleased: { buttonBg.color = "#2563EB"; startLogin(); }
+                    }
 
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            onEntered: {
-                buttonBg.color = "#2A83F8"
-                buttonBg.scale = 1.06
+                    PropertyAnimation {
+                        id: showLoginButton
+                        target: loginButton
+                        properties: "opacity"
+                        to: 1.0
+                        duration: 120
+                        easing.type: Easing.OutCubic
+                    }
+                    PropertyAnimation {
+                        id: hideLoginButton
+                        target: loginButton
+                        properties: "opacity"
+                        to: 0
+                        duration: 100
+                        easing.type: Easing.InCubic
+                    }
+                }
             }
-            onExited: {
-                buttonBg.color = "#1A73E8"
-                buttonBg.scale = 1.0
-            }
-            onPressed: {
-                buttonBg.color = "#0A5FC8"
-                buttonBg.scale = 0.94
-            }
-            onReleased: {
-                buttonBg.color = "#1A73E8"
-                buttonBg.scale = 1.0
-                startLogin();
-            }
-        }
-
-        PropertyAnimation {
-            id: showLoginButton
-            target: loginButton
-            properties: "opacity"
-            to: 0.9
-            duration: 150
-            easing.type: Easing.OutCubic
-        }
-        PropertyAnimation {
-            id: hideLoginButton
-            target: loginButton
-            properties: "opacity"
-            to: 0
-            duration: 120
-            easing.type: Easing.InCubic
         }
     }
 }
