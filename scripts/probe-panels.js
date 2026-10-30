@@ -31,7 +31,7 @@ for (var i = 0; i < ids.length; i++) {
         if (wid) { wtypes.push(wid.type); }
     }
     log.push(p.location + ";h=" + Math.round(p.height) + ";float=" + p.floating +
-             ";align=" + p.alignment + ";widgets=" + wtypes.join(",") + ";pid=" + p.id);
+             ";align=" + p.alignment + ";screen=" + p.screen + ";widgets=" + wtypes.join(",") + ";pid=" + p.id);
 }
 
 print(log.join("|"));
