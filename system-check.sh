@@ -25,6 +25,8 @@ echo -e "${BOLD}[2/3] Running Preflight Check...${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 "$ROOT/scripts/preflight-check.sh" --light 2>&1 | tail -15
 echo ""
+"$ROOT/scripts/preflight-check.sh" --dark 2>&1 | tail -15
+echo ""
 
 echo -e "${BOLD}[3/3] Running Verification...${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
