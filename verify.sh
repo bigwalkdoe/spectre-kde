@@ -77,6 +77,8 @@ TP="$(printf '%s\n' "$PROBE" | grep '^top;' | tr -d '\n')"
 DP="$(printf '%s\n' "$PROBE" | grep '^bottom;' | tr -d '\n')"
 CHK "top bar found"          "1" "$([ -n "$TP" ] && echo 1 || echo 0)"
 CHK "dock found"             "1" "$([ -n "$DP" ] && echo 1 || echo 0)"
+CHK "top bar on primary screen" "0" "$(printf '%s' "$TP" | sed -n 's/.*screen=\([0-9]*\).*/\1/p')"
+CHK "dock on primary screen"    "0" "$(printf '%s' "$DP" | sed -n 's/.*screen=\([0-9]*\).*/\1/p')"
 if want "$TB_APP_MENU"; then
   CHK "global menu in top bar" "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.appmenu')"
 else
