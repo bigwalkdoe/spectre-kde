@@ -565,6 +565,11 @@ else
 fi
 
 if [ "$FAIL" -eq 0 ]; then
+  # Optional screenshot for visual regression (non-fatal)
+  if command -v scrot >/dev/null 2>&1; then
+    mkdir -p "$ROOT/screenshots"
+    scrot "$ROOT/screenshots/post-apply-$(date +%Y%m%d-%H%M%S).png" 2>/dev/null && echo "screenshot captured" || true
+  fi
   {
     echo "APPLIED=$BACKUP"
     echo "BOOT=$(cat /proc/sys/kernel/random/boot_id 2>/dev/null)"
