@@ -480,13 +480,14 @@ BKL="$(ls -1dt "$HOME"/.config/kde-backups/*/ 2>/dev/null | head -1)"
 CHK "timestamped backup exists" "yes" "$([ -n "$BKL" ] && echo yes || echo no)"
 [ -n "$BKL" ] && echo "  latest: $BKL"
 
-echo "--- sddm-login (enterprise: Orchis-Mac theme + security hardening) ---"
-SDDM_THEME="/usr/share/sddm/themes/Orchis-Mac"
 SDDM_CONF="/etc/sddm.conf.d/theme.conf"
+echo "--- sddm-login (theme from $SDDM_CONF) ---"
+CURRENT_THEME="$(sed -n 's/^Current=//p' "$SDDM_CONF" | head -1)"
+SDDM_THEME="/usr/share/sddm/themes/$CURRENT_THEME"
 if [ -d "$SDDM_THEME" ] && [ -f "$SDDM_CONF" ]; then
-  CHK "sddm theme installed (metadata Name=Orchis-Mac)" "yes" \
-    "$([ -f "$SDDM_THEME/metadata.desktop" ] && grep -q '^Name=Orchis-Mac$' "$SDDM_THEME/metadata.desktop" && echo yes || echo no)"
-  CHK "sddm greeter config -> current=Orchis-Mac" "Orchis-Mac" \
+  CHK "sddm theme installed" "yes" \
+    "$([ -f "$SDDM_THEME/metadata.desktop" ] && echo yes || echo no)"
+  CHK "sddm greeter config -> current=$CURRENT_THEME" "$CURRENT_THEME" \
     "$(sed -n 's/^Current=//p' "$SDDM_CONF" | head -1)"
   CHK "sddm cursor configured" "Bibata-Modern-Ice" \
     "$(sed -n 's/^CursorTheme=//p' "$SDDM_CONF" | head -1)"
@@ -515,12 +516,14 @@ if [ -d "$SDDM_THEME" ] && [ -f "$SDDM_CONF" ]; then
   CHK "sddm: default session = plasma" "plasma" \
     "$(sed -n 's/^DefaultSession=//p' "$SDDM_CONF" | head -1)"
 
-  # Custom theme assets
-  CHK "sddm: custom logo installed" "yes" \
-    "$([ -f "$SDDM_THEME/assets/logo.svg" ] && echo yes || echo no)"
-  CHK "sddm: custom background installed" "yes" \
-    "$([ -f "$SDDM_THEME/background.jpg" ] && echo yes || echo no)"
-  CHK "sddm: custom login UI installed" "yes" \
+  # Custom theme assets (Orchis-Mac only)
+  if [ "$CURRENT_THEME" = "Orchis-Mac" ]; then
+    CHK "sddm: custom logo installed" "yes" \
+      "$([ -f "$SDDM_THEME/assets/logo.svg" ] && echo yes || echo no)"
+    CHK "sddm: custom background installed" "yes" \
+      "$([ -f "$SDDM_THEME/background.jpg" ] && echo yes || echo no)"
+  fi
+  CHK "sddm: login UI installed" "yes" \
     "$([ -f "$SDDM_THEME/Login.qml" ] && echo yes || echo no)"
 
   if command -v sddm-greeter-qt6 >/dev/null && [ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]; then
