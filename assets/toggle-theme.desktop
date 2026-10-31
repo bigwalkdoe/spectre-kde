@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Toggle Theme
+Comment=Switch between light and dark spectre-kde themes
+Exec=@ROOT@/scripts/toggle-theme.sh
+Icon=preferences-desktop-color
+Type=Application
+Terminal=false
+Categories=Settings;
