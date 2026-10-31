@@ -542,20 +542,8 @@ else
   echo "SKIP  SDDM login theme not installed (optional: sudo ./scripts/install-sddm-orchis.sh)"
 fi
 
-echo "--- lock screen (Plasma, must match SDDM styling) ---"
-LOCKDIR="$HOME/.local/share/plasma/shells/org.kde.plasma.desktop"
-if [ -d "$LOCKDIR" ]; then
-  CHK "lock screen shell package has metadata" "yes" \
-    "$([ -f "$LOCKDIR/metadata.json" ] && echo yes || echo no)"
-  CHK "lock screen MainBlock.qml present" "yes" \
-    "$([ -f "$LOCKDIR/contents/lockscreen/MainBlock.qml" ] && echo yes || echo no)"
-  if [ -f "$LOCKDIR/contents/lockscreen/MainBlock.qml" ]; then
-    CHK "lock screen uses enterprise radius (6px)" "yes" \
-      "$(grep -q 'radius: 6' "$LOCKDIR/contents/lockscreen/MainBlock.qml" && echo yes || echo no)"
-  fi
-else
-  echo "SKIP  lock screen override not installed (apply.sh installs it)"
-fi
+echo "--- lock screen (Plasma default) ---"
+echo "SKIP  lock screen uses the system default (no override)"
 
 echo "--- health (crash-loop + hardware) ---"
 if [ "$HEALTH" -eq 0 ]; then
