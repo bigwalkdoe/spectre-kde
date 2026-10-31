@@ -73,16 +73,7 @@ SessionManagementScreen {
             width: parent.width
             spacing: Kirigami.Units.largeSpacing
 
-            Text {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: Kirigami.Units.largeSpacing
-                visible: !showUsernamePrompt && userList.selectedUser
-                text: userList.selectedUser
-                color: "#FFFFFF"
-                font.pointSize: fontSize + 4
-                font.weight: Font.Normal
-                font.family: config.Font || "Inter"
-            }
+            // (username is already shown in the user list / input; no duplicate greeting)
 
             Input {
                 id: userNameInput
