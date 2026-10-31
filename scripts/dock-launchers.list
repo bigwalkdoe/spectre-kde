@@ -25,3 +25,4 @@ org.mozilla.firefox.desktop              # Web
 org.torproject.torbrowser-launcher.desktop # Tor Browser
 org.kde.konsole.desktop                  # Terminal
 terminator.desktop                       # Terminal
+spectre-toggle-theme.desktop              # Toggle light/dark theme

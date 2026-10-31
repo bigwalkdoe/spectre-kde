@@ -65,7 +65,7 @@ fi
 # (hidden until the mouse reaches the screen edge; fullscreen dodges the bar).
 PANEL_VISIBILITY="${PANEL_VISIBILITY:-2}"
 SPLASH="${SPLASH:-AppleSplash}"
-SDDM_THEME="${SDDM_THEME:-Orchis-Mac}"
+SDDM_THEME="${SDDM_THEME:-breeze}"
 WALLPAPER="$HOME/.local/share/wallpapers/kde-setup-02/wavy_lines_v02_5120x2880.png"
 BACKUP=""; FAIL=0
 say(){ echo; echo "### $*"; }
@@ -342,6 +342,12 @@ echo "Applied enterprise SDDM config to /etc/sddm.conf.d/theme.conf"
 
 say "Autostart: sync from scripts/autostart.list"
 bash "$ROOT/scripts/manage-autostart.sh" || die "autostart sync failed"
+
+say "Theme toggle: install desktop entry"
+mkdir -p "$HOME/.local/share/applications"
+sed "s|@ROOT@|$ROOT|g" "$ROOT/assets/toggle-theme.desktop" > "$HOME/.local/share/applications/spectre-toggle-theme.desktop" 2>/dev/null || true
+# Fix Exec path to absolute
+sed -i "s|^Exec=.*|Exec=$ROOT/scripts/toggle-theme.sh|" "$HOME/.local/share/applications/spectre-toggle-theme.desktop"
 
 say "Baloo: file indexing (conservative, local only)"
 mkdir -p "$HOME/.config"
