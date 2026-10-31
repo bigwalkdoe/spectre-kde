@@ -545,8 +545,13 @@ else
   echo "SKIP  SDDM login theme not installed (optional: sudo ./scripts/install-sddm-orchis.sh)"
 fi
 
-echo "--- lock screen (Plasma default) ---"
-echo "SKIP  lock screen uses the system default (no override)"
+echo "--- lock screen (Plasma, system default) ---"
+LOCK_MAIN="${SPECTRE_LOCK_MAIN:-/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/MainBlock.qml}"
+if [ -f "$LOCK_MAIN" ]; then
+  CHK "lock screen MainBlock.qml non-empty" "yes" "$([ -s "$LOCK_MAIN" ] && echo yes || echo no)"
+else
+  echo "SKIP  lock screen shell not installed (system default)"
+fi
 
 echo "--- health (crash-loop + hardware) ---"
 if [ "$HEALTH" -eq 0 ]; then

@@ -514,6 +514,25 @@ bash "$ROOT/scripts/set-panel-visibility.sh" "$LAYOUT_OUT" "$PANEL_VISIBILITY" \
 
 say "Clean stale plasmashellrc entries"
 bash "$ROOT/scripts/clean-plasmashellrc.sh" || true
+
+say "Lock screen: ensure system MainBlock.qml is intact"
+# An empty MainBlock.qml makes kscreenlocker_greet fail to load its QML and
+# fall back to the built-in (blue) locker on every Super+L. Self-heal it from
+# the owning package instead of leaving the broken file in place.
+LOCK_MAIN="${SPECTRE_LOCK_MAIN:-/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/MainBlock.qml}"
+if [ -f "$LOCK_MAIN" ] && [ ! -s "$LOCK_MAIN" ]; then
+  if command -v rpm >/dev/null 2>&1 && rpm -qf "$LOCK_MAIN" >/dev/null 2>&1; then
+    LOCK_PKG="$(rpm -qf "$LOCK_MAIN")"
+    if command -v dnf >/dev/null 2>&1; then
+      $SUDO dnf reinstall -y "$LOCK_PKG" >/dev/null 2>&1 && echo "repaired empty lock screen MainBlock.qml" || echo "WARN: could not repair $LOCK_MAIN"
+    else
+      echo "WARN: dnf not available to repair $LOCK_MAIN"
+    fi
+  else
+    echo "WARN: cannot identify package owning $LOCK_MAIN"
+  fi
+fi
+
 say "Wallpaper"
 WALLPAPER_DIR="$HOME/.local/share/wallpapers/kde-setup-02"
 WALLPAPER_NAME="wavy_lines_v02_5120x2880.png"
