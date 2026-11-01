@@ -95,7 +95,7 @@ echo ""
 
 # --- Repository files ---
 echo -e "${BOLD}[Repository Integrity]${NC}"
-for f in apply.sh verify.sh scripts/layout.js scripts/dock-launchers.list scripts/tray-config.js scripts/resolve-launchers.sh scripts/restore-backup.sh; do
+for f in apply.sh verify.sh scripts/layout.js scripts/dock-launchers.list scripts/tray-config.js scripts/manage-tray.sh scripts/resolve-launchers.sh scripts/restore-backup.sh; do
     if [ -f "$ROOT/$f" ]; then
         ok "$f exists"
     else
