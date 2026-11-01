@@ -38,12 +38,18 @@ diff_file() {
     
     # Try to find matching repo file
     local repo_file=""
-    if [ -f "$REPO_CFG/applied-$f.conf" ]; then
-        repo_file="$REPO_CFG/applied-$f.conf"
-    elif [ -f "$REPO_CFG/applied-$(basename "$f" .rc)rc.conf" ]; then
-        repo_file="$REPO_CFG/applied-$(basename "$f" .rc)rc.conf"
-    elif [ -f "$REPO_CFG/$f" ]; then
-        repo_file="$REPO_CFG/$f"
+    # special-case: plasma-org.kde.plasma.desktop-appletsrc -> applied-appletsrc.conf
+    case "$f" in
+        plasma-org.kde.plasma.desktop-appletsrc) repo_file="$REPO_CFG/applied-appletsrc.conf" ;;
+    esac
+    if [ -z "$repo_file" ] || [ ! -f "$repo_file" ]; then
+        if [ -f "$REPO_CFG/applied-$f.conf" ]; then
+            repo_file="$REPO_CFG/applied-$f.conf"
+        elif [ -f "$REPO_CFG/applied-$(basename "$f" .rc)rc.conf" ]; then
+            repo_file="$REPO_CFG/applied-$(basename "$f" .rc)rc.conf"
+        elif [ -f "$REPO_CFG/$f" ]; then
+            repo_file="$REPO_CFG/$f"
+        fi
     fi
     
     if [ -n "$repo_file" ] && [ -f "$CFG/$f" ]; then
