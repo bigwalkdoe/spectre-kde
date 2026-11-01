@@ -95,10 +95,11 @@ show_menu() {
     echo -e "${GREEN}24)${NC} Install Dependencies"
     echo -e "${GREEN}25)${NC} Reset/Restore Options"
     echo -e "${GREEN}26)${NC} Manage System Tray (Pinned Items)"
+    echo -e "${GREEN}27)${NC} Manage Top Bar Widgets"
     echo ""
     echo -e "${RED}0)${NC} Exit"
     echo ""
-    echo -n "Enter your choice [0-26]: "
+    echo -n "Enter your choice [0-27]: "
 }
 
 apply_menu() {
@@ -877,6 +878,12 @@ while true; do
             ;;
         26)
             tray_menu
+            ;;
+        27)
+            echo ""
+            "$ROOT/scripts/manage-topbar.sh" list
+            echo ""
+            read -p "Press Enter to continue..."
             ;;
         0)
             echo ""
