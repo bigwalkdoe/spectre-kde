@@ -105,6 +105,87 @@ status_tray() {
     echo "==================="
 }
 
+current_items() {
+    python3 - "$TC" <<'PY'
+import re, sys
+s = open(sys.argv[1]).read()
+m = re.search(r'extraItems",?\s*\n(.*?)\);', s, re.S)
+if not m:
+    sys.exit(0)
+for line in m.group(1).splitlines():
+    line = line.strip().rstrip('+').strip().strip('"').rstrip(',')
+    if line:
+        print(line)
+PY
+}
+
+# Reorder a list of item ids according to DEFAULT_ITEMS, appending unknowns.
+order_items() {
+    local present="$1"
+    local ordered=()
+    for d in "${DEFAULT_ITEMS[@]}"; do
+        if printf '%s\n' "$present" | grep -qxF "$d"; then
+            ordered+=("$d")
+        fi
+    done
+    # append any items not in defaults
+    while IFS= read -r it; do
+        [ -z "$it" ] && continue
+        local found=0
+        for d in "${DEFAULT_ITEMS[@]}"; do
+            [ "$it" = "$d" ] && { found=1; break; }
+        done
+        if [ "$found" -eq 0 ]; then
+            ordered+=("$it")
+        fi
+    done <<< "$present"
+    printf '%s\n' "${ordered[@]}"
+}
+
+pin_tray() {
+    local item="$1"
+    case "$item" in
+        org.kde.plasma.*) ;;
+        *) item="org.kde.plasma.$item" ;;
+    esac
+    local items
+    items="$(current_items)"
+    if printf '%s\n' "$items" | grep -qxF "$item"; then
+        echo -e "${BLUE}Already pinned:${NC} $item"
+        return 0
+    fi
+    local newset
+    newset="$(printf '%s\n' "$items"; printf '%s\n' "$item")"
+    local ordered
+    ordered="$(order_items "$newset")"
+    # shellcheck disable=SC2046  # intentional word splitting on item ids
+    write_tray_config $(printf '%s\n' "$ordered")
+    echo -e "${GREEN}Pinned:${NC} $item"
+    echo -e "${BLUE}Run './apply.sh' or './quick-update.sh' to apply${NC}"
+}
+
+unpin_tray() {
+    local item="$1"
+    case "$item" in
+        org.kde.plasma.*) ;;
+        *) item="org.kde.plasma.$item" ;;
+    esac
+    local items
+    items="$(current_items)"
+    if ! printf '%s\n' "$items" | grep -qxF "$item"; then
+        echo -e "${RED}Not pinned:${NC} $item"
+        return 1
+    fi
+    local newset
+    newset="$(printf '%s\n' "$items" | grep -vxF "$item")"
+    local ordered
+    ordered="$(order_items "$newset")"
+    # shellcheck disable=SC2046  # intentional word splitting on item ids
+    write_tray_config $(printf '%s\n' "$ordered")
+    echo -e "${GREEN}Unpinned:${NC} $item"
+    echo -e "${BLUE}Run './apply.sh' or './quick-update.sh' to apply${NC}"
+}
+
 reset_tray() {
     write_tray_config "${DEFAULT_ITEMS[@]}"
     echo -e "${GREEN}Reset tray pinned items to defaults${NC}"
@@ -114,20 +195,40 @@ reset_tray() {
 case "${1:-list}" in
     list|ls) list_tray ;;
     status|st) status_tray ;;
+    pin|add)
+        if [ -z "${2:-}" ]; then
+            echo -e "${RED}Error:${NC} Please provide an item id"
+            echo "Usage: $0 pin <item>"
+            exit 1
+        fi
+        pin_tray "$2"
+        ;;
+    unpin|remove|rm)
+        if [ -z "${2:-}" ]; then
+            echo -e "${RED}Error:${NC} Please provide an item id"
+            echo "Usage: $0 unpin <item>"
+            exit 1
+        fi
+        unpin_tray "$2"
+        ;;
     reset) reset_tray ;;
     *)
         echo -e "${BLUE}spectre-kde Tray Manager${NC}"
         echo "========================"
         echo ""
-        echo "Usage: $0 [command]"
+        echo "Usage: $0 [command] [args]"
         echo ""
         echo "Commands:"
-        echo "  list, ls     - List pinned tray items"
-        echo "  status, st   - Show tray config status"
-        echo "  reset        - Restore default pinned tray items"
+        echo "  list, ls          - List pinned tray items"
+        echo "  status, st        - Show tray config status"
+        echo "  pin <item>        - Pin a tray item"
+        echo "  unpin <item>      - Unpin a tray item"
+        echo "  reset             - Restore default pinned tray items"
         echo ""
         echo "Examples:"
         echo "  $0 list"
+        echo "  $0 pin clipboard"
+        echo "  $0 unpin battery"
         echo "  $0 reset"
         echo ""
         exit 0
