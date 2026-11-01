@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WALLPAPER_DIR="$HOME/.local/share/wallpapers/kde-setup-02"
 VENDORED_DIR="$ROOT/assets/wallpapers"
 
