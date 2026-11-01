@@ -88,7 +88,7 @@ EOF
         [ -f "$ROOT/scripts/dock-launchers.list" ] && cp "$ROOT/scripts/dock-launchers.list" "$ROOT/scripts/dock-launchers.list.bak"
         [ -f "$ROOT/scripts/dock-config" ] && cp "$ROOT/scripts/dock-config" "$ROOT/scripts/dock-config.bak"
         [ -f "$ROOT/scripts/topbar-config" ] && cp "$ROOT/scripts/topbar-config" "$ROOT/scripts/topbar-config.bak"
-        git -C "$ROOT" checkout -- scripts/dock-launchers.list scripts/dock-config 2>/dev/null || true
+        git -C "$ROOT" checkout -- scripts/dock-launchers.list scripts/dock-config scripts/tray-config.js 2>/dev/null || true
         # Reset topbar
         cat > "$ROOT/scripts/topbar-config" << 'EOF'
 # spectre-kde top bar configuration
