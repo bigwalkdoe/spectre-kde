@@ -26,16 +26,22 @@ if (!tray) {
     log.push("ERROR systemtray not found in any panel");
 } else {
     tray.currentConfigGroup = ["General"];
-    tray.writeConfig(
-        "extraItems",
-        "org.kde.plasma.clipboard," +
-        "org.kde.plasma.networkmanagement," +
-        "org.kde.plasma.bluetooth," +
-        "org.kde.plasma.volume," +
-        "org.kde.plasma.brightness," +
-        "org.kde.plasma.battery," +
-        "org.kde.plasma.notifications");
-    log.push("systemtray curated");
+    try {
+        tray.writeConfig(
+            "extraItems",
+            "org.kde.plasma.clipboard," +
+            "org.kde.plasma.networkmanagement," +
+            "org.kde.plasma.bluetooth," +
+            "org.kde.plasma.volume," +
+            "org.kde.plasma.brightness," +
+            "org.kde.plasma.battery," +
+            "org.kde.plasma.notifications");
+        log.push("systemtray curated");
+    } catch (e) {
+        // A missing backing service can null an item; that is non-fatal and
+        // must not abort the whole apply. Keep the tray usable.
+        log.push("WARN tray curation failed (non-fatal): " + e);
+    }
 }
 
 print(log.join("|"));
