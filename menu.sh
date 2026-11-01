@@ -96,10 +96,11 @@ show_menu() {
     echo -e "${GREEN}25)${NC} Reset/Restore Options"
     echo -e "${GREEN}26)${NC} Manage System Tray (Pinned Items)"
     echo -e "${GREEN}27)${NC} Manage Top Bar Widgets"
+    echo -e "${GREEN}28)${NC} Manage Splash Screen"
     echo ""
     echo -e "${RED}0)${NC} Exit"
     echo ""
-    echo -n "Enter your choice [0-27]: "
+    echo -n "Enter your choice [0-28]: "
 }
 
 apply_menu() {
@@ -882,6 +883,12 @@ while true; do
         27)
             echo ""
             "$ROOT/scripts/manage-topbar.sh" list
+            echo ""
+            read -p "Press Enter to continue..."
+            ;;
+        28)
+            echo ""
+            "$ROOT/scripts/manage-splash.sh" list
             echo ""
             read -p "Press Enter to continue..."
             ;;
