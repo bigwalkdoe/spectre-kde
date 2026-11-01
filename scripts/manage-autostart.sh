@@ -57,6 +57,21 @@ for id in "${DESKTOP_IDS[@]}"; do
     fi
 done
 
+# Guard: an empty list would otherwise wipe the whole autostart dir.
+if [ "${#DESKTOP_IDS[@]}" -eq 0 ]; then
+    echo -e "  (no entries in $LIST_FILE; leaving autostart dir untouched)" >&2
+    echo "Autostart sync complete. Active: 0 entries."
+    exit 0
+fi
+
+# Only prune when we actually linked something; otherwise a missing desktop file
+# would cause every existing autostart entry to be deleted.
+if [ "${#want[@]}" -eq 0 ]; then
+    echo "  (no desktop files resolved; leaving autostart dir untouched)" >&2
+    echo "Autostart sync complete. Active: 0 entries."
+    exit 0
+fi
+
 # Remove any .desktop files in autostart dir that we don't want
 shopt -s nullglob
 for existing in "$AUTOSTART_DIR"/*.desktop; do
