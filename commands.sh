@@ -44,6 +44,7 @@ echo ""
 
 echo -e "${BLUE}Managers:${NC}"
 printf "  %-30s %s\n" "./scripts/manage-dock.sh" "Manage dock apps"
+printf "  %-30s %s\n" "./scripts/manage-tray.sh" "Manage tray pinned items"
 printf "  %-30s %s\n" "./scripts/manage-wallpapers.sh" "Per-monitor wallpapers"
 printf "  %-30s %s\n" "./scripts/manage-kwin-rules.sh" "Window rules"
 printf "  %-30s %s\n" "./scripts/manage-nightlight.sh" "Night Color"

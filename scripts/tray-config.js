@@ -1,10 +1,6 @@
 // spectre-kde — system tray curation (Plasma 6 scripting API)
 //
 // Curates which status items are pinned in the top-bar system tray, in order.
-// Only pin items that are reliably available on this hardware; leave the rest
-// in knownItems so Plasma surfaces them (in overflow or on the bar) when their
-// backing service/device is present. Pinning an item whose service is absent
-// makes the whole tray report "unavailable" in Plasma 6.7.
 
 var log = [];
 var tray = null;
@@ -35,11 +31,10 @@ if (!tray) {
             "org.kde.plasma.volume," +
             "org.kde.plasma.brightness," +
             "org.kde.plasma.battery," +
-            "org.kde.plasma.notifications");
+            "org.kde.plasma.notifications"
+        );
         log.push("systemtray curated");
     } catch (e) {
-        // A missing backing service can null an item; that is non-fatal and
-        // must not abort the whole apply. Keep the tray usable.
         log.push("WARN tray curation failed (non-fatal): " + e);
     }
 }
