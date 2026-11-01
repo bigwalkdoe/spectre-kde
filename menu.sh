@@ -94,10 +94,11 @@ show_menu() {
     echo -e "${GREEN}23)${NC} Import Configuration Profile"
     echo -e "${GREEN}24)${NC} Install Dependencies"
     echo -e "${GREEN}25)${NC} Reset/Restore Options"
+    echo -e "${GREEN}26)${NC} Manage System Tray (Pinned Items)"
     echo ""
     echo -e "${RED}0)${NC} Exit"
     echo ""
-    echo -n "Enter your choice [0-25]: "
+    echo -n "Enter your choice [0-26]: "
 }
 
 apply_menu() {
@@ -205,6 +206,70 @@ dock_menu() {
             5)
                 echo ""
                 "$ROOT/scripts/manage-dock.sh" config
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo -e "${RED}Invalid choice${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+tray_menu() {
+    while true; do
+        show_header
+        show_status
+        echo -e "${BOLD}SYSTEM TRAY MANAGEMENT${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -e "${GREEN}1)${NC} List Pinned Tray Items"
+        echo -e "${GREEN}2)${NC} Pin a Tray Item"
+        echo -e "${GREEN}3)${NC} Unpin a Tray Item"
+        echo -e "${GREEN}4)${NC} Reset to Defaults"
+        echo -e "${GREEN}5)${NC} Status"
+        echo -e "${RED}0)${NC} Back to Main Menu"
+        echo ""
+        echo -n "Enter your choice [0-5]: "
+        read -r choice
+        case $choice in
+            1)
+                echo ""
+                "$ROOT/scripts/manage-tray.sh" list
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            2)
+                echo ""
+                echo -n "Enter item id (e.g. clipboard, battery): "
+                read -r item
+                echo ""
+                "$ROOT/scripts/manage-tray.sh" pin "$item"
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            3)
+                echo ""
+                echo -n "Enter item id to unpin: "
+                read -r item
+                echo ""
+                "$ROOT/scripts/manage-tray.sh" unpin "$item"
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            4)
+                echo ""
+                "$ROOT/scripts/manage-tray.sh" reset
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            5)
+                echo ""
+                "$ROOT/scripts/manage-tray.sh" status
                 echo ""
                 read -p "Press Enter to continue..."
                 ;;
@@ -809,6 +874,9 @@ while true; do
             "$ROOT/reset.sh"
             echo ""
             read -p "Press Enter to continue..."
+            ;;
+        26)
+            tray_menu
             ;;
         0)
             echo ""
