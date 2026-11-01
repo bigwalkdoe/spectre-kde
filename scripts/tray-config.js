@@ -28,6 +28,7 @@ if (!tray) {
     tray.currentConfigGroup = ["General"];
     tray.writeConfig(
         "extraItems",
+        "org.kde.plasma.clipboard," +
         "org.kde.plasma.networkmanagement," +
         "org.kde.plasma.bluetooth," +
         "org.kde.plasma.volume," +
