@@ -5,6 +5,20 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 fails=0
+
+# Stub external KDE tools so the suite runs without a live Plasma session
+STUBS="$WORK/bin"
+mkdir -p "$STUBS"
+cat > "$STUBS/kwriteconfig6" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+cat > "$STUBS/kreadconfig6" <<'STUB'
+#!/bin/sh
+echo "(unset)"
+STUB
+chmod +x "$STUBS/kwriteconfig6" "$STUBS/kreadconfig6"
+export PATH="$STUBS:$PATH"
 ok(){ printf 'ok   %s\n' "$1"; }
 no(){ printf 'FAIL %s\n       %s\n' "$1" "${2:-}"; fails=$((fails + 1)); }
 
