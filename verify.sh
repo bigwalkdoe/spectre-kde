@@ -257,18 +257,33 @@ CHK "blur on" "true" "$(q kwinrc Plugins blurEnabled)"
 CHK "borderless maximized (macOS-like)" "true" "$(q kwinrc General BorderlessMaximizedWindows)"
 
 echo "--- kwin window rules ---"
-# Declarative rules from config/applied-kwinrulesrc.conf. Verify the file is
-# present and that the key rule sections made it into the live config.
+# Rules from config/applied-kwinrulesrc.conf, in KWin's native kwinrulesrc
+# format (numeric sections listed by [General] count/rules). Verify the file
+# is present, that the key rules are there, and that General is consistent.
 KWIN_RULES="$CFG/kwinrulesrc"
 if [ -f "$KWIN_RULES" ]; then
   CHK "kwinrulesrc present" "yes" "yes"
   for rule in "Konsole - borderless" "Firefox - desktop 2" "Spotify - keep above"; do
-    if grep -q "^\[${rule}\]" "$KWIN_RULES" 2>/dev/null || grep -q "Description.*${rule}" "$KWIN_RULES" 2>/dev/null || grep -q "${rule}" "$KWIN_RULES" 2>/dev/null; then
+    if grep -q "^Description=${rule}$" "$KWIN_RULES" 2>/dev/null; then
       CHK "window rule: $rule" "present" "present"
     else
       CHK "window rule: $rule" "present" "absent"
     fi
   done
+  # [General] Order must list every numeric section, or KWin evaluates a
+  # different rule set than the file describes.
+  RULE_SECTIONS="$(grep -c -E '^\[[0-9]+\]$' "$KWIN_RULES" 2>/dev/null || true)"
+  ORDER_LINE="$(grep -m1 '^Order=' "$KWIN_RULES" 2>/dev/null || true)"
+  ORDER_ITEMS=0
+  if [ -n "$ORDER_LINE" ]; then
+    ORDER_ITEMS="$(printf '%s' "${ORDER_LINE#Order=}" | tr ',' '\n' | grep -c . || true)"
+  fi
+  if [ "$ORDER_ITEMS" -gt 0 ] && [ "$ORDER_ITEMS" = "$RULE_SECTIONS" ]; then
+    CHK "kwin rules: Order lists all sections" "$RULE_SECTIONS" "$ORDER_ITEMS"
+  else
+    echo "  FAIL  kwin rules: Order items ($ORDER_ITEMS) != sections ($RULE_SECTIONS)"
+    FAILED=$((FAILED + 1))
+  fi
 else
   CHK "kwinrulesrc present" "yes" "no"
   echo "  WARN  ~/.config/kwinrulesrc missing - run ./apply.sh to install window rules"

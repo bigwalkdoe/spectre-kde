@@ -285,13 +285,21 @@ busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure 2>/dev/null \
   || say "note: kwin reconfigure deferred to next login"
 
 say "KWin window rules (macOS-like placement)"
-# Declarative window rules from config/applied-kwinrulesrc.conf. Written after
-# the kwinrc decoration/workspace settings so both take effect together.
-# kwinrulesrc is already in backup.sh FILES and restore-backup.sh AFFECTED, so
-# the write is backed up before anything changes and fully reversible.
-cp "$ROOT/config/applied-kwinrulesrc.conf" "$HOME/.config/kwinrulesrc" \
-  || die "kwin rules config"
+# Rules from config/applied-kwinrulesrc.conf, in KWin's native kwinrulesrc
+# format (General Order= + numeric rule sections). Desktop targets use
+# @DESKTOP_N@ placeholders that render-kwinrules.sh resolves against the
+# kwinrc [Desktops] Id_N values written above, so rules follow this machine's
+# virtual desktops instead of hardcoded UUIDs. Written after the kwinrc
+# decoration/workspace settings so both take effect together. kwinrulesrc is
+# already in backup.sh FILES and restore-backup.sh AFFECTED, so the write is
+# backed up before anything changes and fully reversible.
+bash "$ROOT/scripts/render-kwinrules.sh" > "$HOME/.config/kwinrulesrc" \
+  || die "kwin rules render"
 echo "  KWin window rules installed from config/applied-kwinrulesrc.conf"
+# Reload KWin so rules take effect without a logout. Safe because the file is
+# in KWin's native format: KWin re-reads and keeps the rules.
+busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure 2>/dev/null \
+  || say "note: kwin reconfigure deferred to next login"
 
 say "GTK theme wiring ($SFX mode)"
 for g in gtk-3.0 gtk-4.0; do
@@ -562,8 +570,13 @@ sleep 2
 
 say "Verification (pass 1)"
 # Tell verify.sh an apply is in flight, so it defers the reboot-persistence check
+# instead of judging the PREVIOUS run's marker. Also: plasmashell persists several
+# of these settings asynchronously, so this pass can still observe pre-restart
+# state (a stale panel section, an unserialised key) on an otherwise correct
+# apply. Rolling back a good desktop because of that is worse than the flake;
+# pass 2 below runs after a full restart and is the authoritative gate. Results
+# are still printed either way.
 export KDE_APPLY_IN_PROGRESS=1
-cp "$ROOT/config/applied-kwinrulesrc.conf" "$HOME/.config/kwinrulesrc" 2>/dev/null || true
 if ! bash "$ROOT/verify.sh" --no-health; then
   say "NOTE: pass 1 reported failures; pass 2 after restart is authoritative"
 fi
@@ -572,7 +585,6 @@ if [ "$QUICK" -eq 1 ]; then
   say "Quick mode: skipping pass 2 verification"
 else
   sleep 3
-  cp "$ROOT/config/applied-kwinrulesrc.conf" "$HOME/.config/kwinrulesrc" 2>/dev/null || true
   bash "$ROOT/verify.sh" || FAIL=1
 fi
 

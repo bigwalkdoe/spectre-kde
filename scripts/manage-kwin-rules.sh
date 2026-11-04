@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # spectre-kde -- scripts/manage-kwin-rules.sh
-# Manage declarative KWin window rules in config/applied-kwinrulesrc.conf
+# Manage KWin window rules in config/applied-kwinrulesrc.conf
+# The file uses KWin's native kwinrulesrc format: numeric [n] sections listed
+# by [General] Order. Desktop targets use @DESKTOP_N@ placeholders resolved at
+# apply time (scripts/render-kwinrules.sh), so they follow the machine.
 # Usage: ./scripts/manage-kwin-rules.sh [list|add|remove|show|apply]
 
 set -euo pipefail
@@ -14,6 +17,59 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# next_num: highest numeric section + 1 (1 when none)
+next_num() {
+    awk '/^\[[0-9]+\]$/ { n = substr($0, 2, length($0) - 2) + 0; if (n > max) max = n }
+         END { print max + 1 }' "$CONF"
+}
+
+# section_for <name-or-number>: resolve a rule reference to its section number.
+# Accepts a numeric section directly, or a Description value.
+section_for() {
+    local target="$1"
+    if [[ "$target" =~ ^[0-9]+$ ]] && grep -q "^\[${target}\]$" "$CONF"; then
+        printf '%s\n' "$target"
+        return 0
+    fi
+    awk -v t="$target" '
+        /^\[[0-9]+\]$/ { n = substr($0, 2, length($0) - 2); next }
+        /^Description=/ && n != "" && substr($0, 13) == t { print n; found = 1; exit }
+        END { if (!found) exit 1 }
+    ' "$CONF"
+}
+
+# update_order: rewrite [General] Order= from the numeric sections.
+update_order() {
+    local rules tmp
+    rules="$(awk '/^\[[0-9]+\]$/ { gsub(/[][]/, ""); printf "%s%s", sep, $0; sep = "," }' "$CONF")"
+    tmp="$(mktemp)"
+    awk -v rules="$rules" '
+        function close_general() {
+            if (in_general) {
+                if (!wrote) print "Order=" rules
+                in_general = 0
+            }
+        }
+        /^\[General\]$/ { in_general = 1; print; next }
+        /^\[/ { close_general(); print; next }
+        {
+            if (in_general && $0 ~ /^Order=/) { print "Order=" rules; wrote = 1; next }
+            print
+        }
+        END { close_general() }
+    ' "$CONF" > "$tmp" && mv "$tmp" "$CONF"
+    # Fallback: if the file had no [General] section at all, add one.
+    if ! grep -q '^\[General\]$' "$CONF"; then
+        tmp="$(mktemp)"
+        {
+            echo "[General]"
+            echo "Order=$rules"
+            echo ""
+            cat "$CONF"
+        } > "$tmp" && mv "$tmp" "$CONF"
+    fi
+}
+
 list_rules() {
     echo -e "${BLUE}KWin window rules (in config/applied-kwinrulesrc.conf):${NC}"
     echo "============================================================"
@@ -21,62 +77,29 @@ list_rules() {
         echo -e "${RED}Config file not found: $CONF${NC}"
         return 1
     fi
-    local i=1
-    local in_rule=0
-    local rule_name=""
-    while IFS= read -r line || [ -n "$line" ]; do
-        # Skip blank lines and comments outside rule sections
-        if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "${line// }" ]]; then
-            continue
-        fi
-        # Detect rule section header
-        if [[ "$line" =~ ^\[(.+)\]$ ]]; then
-            rule_name="${BASH_REMATCH[1]}"
-            in_rule=1
-            echo -e "  ${GREEN}$i.${NC} $rule_name"
-            ((i++))
-            continue
-        fi
-        # Show key=value lines within a rule
-        if [ "$in_rule" -eq 1 ] && [[ "$line" =~ ^[a-zA-Z_]+= ]]; then
-            local key="${line%%=*}"
-            local val="${line#*=}"
-            echo -e "      ${BLUE}${key}${NC}=${val}"
-        fi
-    done < "$CONF"
+    awk '
+        /^\[/ {
+            if (n != "") printf "  %s. %s\n", n, (desc == "" ? "(untitled)" : desc)
+            n = ""; desc = ""
+            if ($0 ~ /^\[[0-9]+\]$/) n = substr($0, 2, length($0) - 2)
+            next
+        }
+        /^Description=/ && n != "" && desc == "" { desc = substr($0, 13) }
+        END { if (n != "") printf "  %s. %s\n", n, (desc == "" ? "(untitled)" : desc) }
+    ' "$CONF"
     echo "============================================================"
 }
 
 show_rule() {
-    local name="$1"
-    local found=0
-    local in_rule=0
-    while IFS= read -r line || [ -n "$line" ]; do
-        if [[ "$line" =~ ^\[(.+)\]$ ]]; then
-            if [ "${BASH_REMATCH[1]}" = "$name" ]; then
-                in_rule=1
-                found=1
-                echo -e "${BLUE}[$name]${NC}"
-                continue
-            else
-                in_rule=0
-                continue
-            fi
-        fi
-        if [ "$in_rule" -eq 1 ]; then
-            # Stop at next section or non-key line
-            if [[ "$line" =~ ^\[ ]]; then
-                break
-            fi
-            if [[ "$line" =~ ^[a-zA-Z_]+= ]] || [[ -z "${line// }" ]] || [[ "$line" =~ ^[[:space:]]*# ]]; then
-                echo "$line"
-            fi
-        fi
-    done < "$CONF"
-    if [ "$found" -eq 0 ]; then
+    local name="$1" num
+    if ! num="$(section_for "$name")"; then
         echo -e "${RED}Rule not found: $name${NC}"
         return 1
     fi
+    awk -v num="[$num]" '
+        /^\[/ { in_rule = ($0 == num) }
+        in_rule { print }
+    ' "$CONF"
 }
 
 add_rule() {
@@ -92,34 +115,42 @@ add_rule() {
         return 1
     fi
 
-    # Check if rule already exists
-    if grep -q "^\[${name}\]" "$CONF" 2>/dev/null; then
+    if section_for "$name" >/dev/null 2>&1; then
         echo -e "${YELLOW}Warning:${NC} rule '$name' already exists"
         return 0
     fi
 
-    # Append the new rule
+    local num
+    num="$(next_num)"
     {
         echo ""
-        echo "# Added by manage-kwin-rules.sh on $(date)"
-        echo "[${name}]"
+        echo "[${num}]"
+        echo "Description=${name}"
         echo "wmclass=${wmclass}"
+        echo "wmclassmatch=1"
         if [ -n "$desktop" ]; then
-            echo "desktop=${desktop}"
+            echo "desktops=@DESKTOP_${desktop}@"
+            echo "desktopsrule=2"
         fi
-        echo "noblord=${noblord}"
-        echo "keepabove=${keepabove}"
-        echo "description=${name}"
+        if [ "$noblord" = "true" ]; then
+            echo "decorationpolicy=none"
+            echo "decorationpolicyrule=2"
+        fi
+        if [ "$keepabove" = "true" ]; then
+            echo "above=true"
+            echo "aboverule=2"
+        fi
     } >> "$CONF"
+    update_order
 
-    echo -e "${GREEN}Added:${NC} $name (wmclass=$wmclass)"
+    echo -e "${GREEN}Added:${NC} $name (wmclass=$wmclass, rule [$num])"
     echo -e "\n${BLUE}Run './apply.sh' to apply the changes${NC}"
 }
 
 remove_rule() {
-    local name="$1"
+    local name="$1" num
 
-    if ! grep -q "^\[${name}\]" "$CONF" 2>/dev/null; then
+    if ! num="$(section_for "$name")"; then
         echo -e "${RED}Error:${NC} rule '$name' not found"
         return 1
     fi
@@ -127,15 +158,22 @@ remove_rule() {
     # Create backup
     cp "$CONF" "$CONF.bak"
 
-    # Remove the rule section: from the [name] line to the next [ or EOF
-    awk -v name="$name" '
-        BEGIN { skip=0 }
+    # Drop the target section, then renumber the rest so sections stay
+    # contiguous (1..N), which keeps Order trivially consistent.
+    awk -v num="$num" '
         /^\[/ {
-            if ($0 == "[" name "]") { skip=1; next }
-            skip=0
+            if ($0 == "[" num "]") { skip = 1; next }
+            skip = 0
         }
         !skip { print }
     ' "$CONF" > "$CONF.tmp" && mv "$CONF.tmp" "$CONF"
+
+    awk '
+        /^\[[0-9]+\]$/ { new++; print "[" new "]"; next }
+        { print }
+    ' "$CONF" > "$CONF.tmp" && mv "$CONF.tmp" "$CONF"
+
+    update_order
 
     echo -e "${GREEN}Removed:${NC} $name"
     echo -e "Backup saved to: $CONF.bak"
@@ -144,11 +182,12 @@ remove_rule() {
 
 apply_rules() {
     echo -e "${YELLOW}Applying KWin window rules...${NC}"
-    cp "$CONF" "$HOME/.config/kwinrulesrc" \
-        || { echo -e "${RED}Failed to copy kwin rules${NC}"; return 1; }
+    # Render @DESKTOP_N@ placeholders against this machine's kwinrc, then install.
+    bash "$ROOT/scripts/render-kwinrules.sh" > "$HOME/.config/kwinrulesrc" \
+        || { echo -e "${RED}Failed to render kwin rules${NC}"; return 1; }
     # Reconfigure KWin so rules take effect without logout
     qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure 2>/dev/null \
-        || busctl --user call org.kde.KWin /KWin org.kde.KWin.reconfigure 2>/dev/null \
+        || busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure 2>/dev/null \
         || echo -e "${YELLOW}Note:${NC} KWin reconfigure may need a logout/login to take effect"
     echo -e "${GREEN}✓ KWin window rules applied${NC}"
     echo -e "${BLUE}Tip:${NC} Open each app to see the rules take effect."
@@ -199,7 +238,7 @@ case "${1:-list}" in
         echo "  add <name> <wmclass> [desktop] [noblord] [keepabove]"
         echo "                        - Add a new window rule"
         echo "  remove <name>         - Remove a window rule"
-        echo "  apply                 - Copy rules to ~/.config/kwinrulesrc and reconfigure KWin"
+        echo "  apply                 - Render + copy rules to ~/.config/kwinrulesrc and reconfigure KWin"
         echo ""
         echo "Examples:"
         echo "  $0 list"
