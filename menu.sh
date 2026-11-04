@@ -97,10 +97,14 @@ show_menu() {
     echo -e "${GREEN}26)${NC} Manage System Tray (Pinned Items)"
     echo -e "${GREEN}27)${NC} Manage Top Bar Widgets"
     echo -e "${GREEN}28)${NC} Manage Splash Screen"
+    echo -e "${GREEN}29)${NC} Manage SDDM Login Screen"
+    echo -e "${GREEN}30)${NC} Manage GTK Theme"
+    echo -e "${GREEN}31)${NC} Manage Power Settings"
+    echo -e "${GREEN}32)${NC} Clean Old Backups"
     echo ""
     echo -e "${RED}0)${NC} Exit"
     echo ""
-    echo -n "Enter your choice [0-28]: "
+    echo -n "Enter your choice [0-32]: "
 }
 
 apply_menu() {
@@ -731,6 +735,108 @@ kwin_rules_menu() {
     done
 }
 
+sddm_menu() {
+    while true; do
+        show_header
+        show_status
+        echo -e "${BOLD}SDDM LOGIN SCREEN MANAGEMENT${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -e "${GREEN}1)${NC} Show Status"
+        echo -e "${GREEN}2)${NC} Install Orchis-Mac Theme"
+        echo -e "${GREEN}3)${NC} Reinstall Orchis-Mac Theme (Force)"
+        echo -e "${RED}0)${NC} Back to Main Menu"
+        echo ""
+        echo -n "Enter your choice [0-3]: "
+        read -r choice
+        case $choice in
+            1)
+                echo ""
+                "$ROOT/scripts/manage-sddm.sh" status
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            2)
+                echo ""
+                "$ROOT/scripts/manage-sddm.sh" install
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            3)
+                echo ""
+                "$ROOT/scripts/manage-sddm.sh" reinstall
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo -e "${RED}Invalid choice${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+splash_menu() {
+    while true; do
+        show_header
+        show_status
+        echo -e "${BOLD}PLASMA SPLASH SCREEN MANAGEMENT${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -e "${GREEN}1)${NC} List Available Splash Themes"
+        echo -e "${GREEN}2)${NC} Show Current Splash"
+        echo -e "${GREEN}3)${NC} Set Splash Theme"
+        echo -e "${GREEN}4)${NC} Reset to Look-and-Feel Default"
+        echo -e "${RED}0)${NC} Back to Main Menu"
+        echo ""
+        echo -n "Enter your choice [0-4]: "
+        read -r choice
+        case $choice in
+            1)
+                echo ""
+                "$ROOT/scripts/manage-splash.sh" list
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            2)
+                echo ""
+                "$ROOT/scripts/manage-splash.sh" current
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            3)
+                echo ""
+                "$ROOT/scripts/manage-splash.sh" list
+                echo ""
+                echo -n "Enter theme name to set: "
+                read -r theme
+                echo ""
+                if [ -n "$theme" ]; then
+                    "$ROOT/scripts/manage-splash.sh" set "$theme"
+                fi
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            4)
+                echo ""
+                "$ROOT/scripts/manage-splash.sh" reset
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo -e "${RED}Invalid choice${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
 # Main loop
 while true; do
     show_header
@@ -887,8 +993,26 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
         28)
+            splash_menu
+            ;;
+        29)
+            sddm_menu
+            ;;
+        30)
             echo ""
-            "$ROOT/scripts/manage-splash.sh" list
+            "$ROOT/scripts/manage-gtk.sh" status
+            echo ""
+            read -p "Press Enter to continue..."
+            ;;
+        31)
+            echo ""
+            "$ROOT/scripts/manage-power.sh" status
+            echo ""
+            read -p "Press Enter to continue..."
+            ;;
+        32)
+            echo ""
+            "$ROOT/scripts/clean-backups.sh"
             echo ""
             read -p "Press Enter to continue..."
             ;;
