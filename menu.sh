@@ -837,6 +837,113 @@ splash_menu() {
     done
 }
 
+gtk_menu() {
+    while true; do
+        show_header
+        show_status
+        echo -e "${BOLD}GTK THEME MANAGEMENT${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -e "${GREEN}1)${NC} Show Status"
+        echo -e "${GREEN}2)${NC} Set Orchis-Dark"
+        echo -e "${GREEN}3)${NC} Set Breeze (Light)"
+        echo -e "${GREEN}4)${NC} Set Custom Theme"
+        echo -e "${RED}0)${NC} Back to Main Menu"
+        echo ""
+        echo -n "Enter your choice [0-4]: "
+        read -r choice
+        case $choice in
+            1)
+                echo ""
+                "$ROOT/scripts/manage-gtk.sh" status
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            2)
+                echo ""
+                "$ROOT/scripts/manage-gtk.sh" dark
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            3)
+                echo ""
+                "$ROOT/scripts/manage-gtk.sh" light
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            4)
+                echo ""
+                echo -n "Enter theme name: "
+                read -r theme
+                echo ""
+                if [ -n "$theme" ]; then
+                    "$ROOT/scripts/manage-gtk.sh" set "$theme"
+                fi
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo -e "${RED}Invalid choice${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+power_menu() {
+    while true; do
+        show_header
+        show_status
+        echo -e "${BOLD}POWER MANAGEMENT${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -e "${GREEN}1)${NC} Show Status"
+        echo -e "${GREEN}2)${NC} Performance Mode"
+        echo -e "${GREEN}3)${NC} Balanced Mode"
+        echo -e "${GREEN}4)${NC} Power Saver Mode"
+        echo -e "${RED}0)${NC} Back to Main Menu"
+        echo ""
+        echo -n "Enter your choice [0-4]: "
+        read -r choice
+        case $choice in
+            1)
+                echo ""
+                "$ROOT/scripts/manage-power.sh" status
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            2)
+                echo ""
+                "$ROOT/scripts/manage-power.sh" performance
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            3)
+                echo ""
+                "$ROOT/scripts/manage-power.sh" balanced
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            4)
+                echo ""
+                "$ROOT/scripts/manage-power.sh" powersave
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo -e "${RED}Invalid choice${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
 # Main loop
 while true; do
     show_header
@@ -999,16 +1106,10 @@ while true; do
             sddm_menu
             ;;
         30)
-            echo ""
-            "$ROOT/scripts/manage-gtk.sh" status
-            echo ""
-            read -p "Press Enter to continue..."
+            gtk_menu
             ;;
         31)
-            echo ""
-            "$ROOT/scripts/manage-power.sh" status
-            echo ""
-            read -p "Press Enter to continue..."
+            power_menu
             ;;
         32)
             echo ""
