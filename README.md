@@ -66,6 +66,31 @@ For first-time setup, run `./welcome.sh` for a guided tour, or `./doctor.sh` to 
 
 ---
 
+## Component Managers
+
+Every component can also be managed directly without the menu:
+
+| Manager | Purpose |
+|---------|---------|
+| `scripts/manage-dock.sh` | Dock applications and settings |
+| `scripts/manage-wallpaper.sh` | Wallpapers (per-monitor supported) |
+| `scripts/manage-topbar.sh` | Top bar widgets and layout |
+| `scripts/manage-tray.sh` | System tray pinned items |
+| `scripts/manage-kwin-rules.sh` | KWin window rules |
+| `scripts/manage-nightlight.sh` | Night Color (blue light filter) |
+| `scripts/manage-notifications.sh` | Notification settings |
+| `scripts/manage-autostart.sh` | Autostart applications |
+| `scripts/manage-fonts.sh` | Fonts, exclusions, font cache |
+| `scripts/manage-splash.sh` | Plasma splash screen theme |
+| `scripts/manage-sddm.sh` | SDDM login screen (status/install/reinstall) |
+| `scripts/manage-gtk.sh` | GTK 3/4 theme |
+| `scripts/manage-cursor.sh` | Cursor theme and size |
+| `scripts/manage-icons.sh` | Icon theme |
+| `scripts/manage-power.sh` | Power profiles (performance/balanced/power saver) |
+| `scripts/clean-backups.sh` | Prune old timestamped backups (keep newest N) |
+
+---
+
 ## Testing
 
 ```bash
