@@ -67,9 +67,9 @@ echo "$LAYOUT_OUT"
 echo "$LAYOUT_OUT" | grep -q "layout complete" || { echo "Layout did not complete"; exit 1; }
 
 echo -e "${YELLOW}Curating system tray...${NC}"
-TRAY_OUT="$(gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell \
-  --method org.kde.PlasmaShell.evaluateScript "$(cat "$ROOT/scripts/tray-config.js")" 2>&1)" || { echo "Tray failed: $TRAY_OUT"; exit 1; }
-echo "$TRAY_OUT"
+# scripts/curate-tray.sh force-recreates the pinned applets; a plain rewrite
+# of an unchanged extraItems list is a no-op to plasmashell.
+bash "$ROOT/scripts/curate-tray.sh" || { echo "Tray curation failed"; exit 1; }
 
 echo -e "${YELLOW}Setting panel visibility (dodge windows)...${NC}"
 bash "$ROOT/scripts/set-panel-visibility.sh" "$LAYOUT_OUT" 2 \

@@ -24,18 +24,17 @@ else
     no "clipboard missing from tray-config.js"
 fi
 
-if awk '/extraItems/{f=1; next} f && /\)/{exit 0} END{exit 1}' "$TC" >/dev/null 2>&1; then :; fi
-# clipboard must be inside the extraItems block
+# clipboard must be inside the ITEMS list that feeds extraItems/shownItems
 if python3 - "$TC" <<'PY' >/dev/null 2>&1
 import re,sys
 s=open(sys.argv[1]).read()
-m=re.search(r'extraItems",?\s*\n(.*?)\);', s, re.S)
+m=re.search(r'var ITEMS\s*=\s*(.*?);', s, re.S)
 sys.exit(0 if m and 'org.kde.plasma.clipboard' in m.group(1) else 1)
 PY
 then
-    ok "clipboard is in the extraItems list"
+    ok "clipboard is in the ITEMS list"
 else
-    no "clipboard not found in extraItems list"
+    no "clipboard not found in ITEMS list"
 fi
 
 echo "=== test-tray-config: matches applied snapshot ==="
@@ -43,13 +42,10 @@ SNAP="$(sed -n 's/^extraItems=//p' "$APP" | head -1)"
 LIVE="$(python3 - "$TC" <<'PY'
 import re,sys
 s=open(sys.argv[1]).read()
-m=re.search(r'extraItems",?\s*\n(.*?)\);', s, re.S)
+m=re.search(r'var ITEMS\s*=\s*(.*?);', s, re.S)
 if not m:
     print(""); sys.exit()
-frag=m.group(1)
-import re as _r
-items=_r.sub(r'[^a-zA-Z0-9.,-]','',frag)
-print(items)
+print(','.join(re.findall(r'"(org\.kde\.plasma\.[A-Za-z0-9.-]+),?"', m.group(1))))
 PY
 )"
 if [ "$SNAP" = "$LIVE" ]; then

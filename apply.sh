@@ -505,11 +505,11 @@ echo "$LAYOUT_OUT"
 echo "$LAYOUT_OUT" | grep -q "layout complete" || die "layout did not complete"
 echo "$LAYOUT_OUT" | grep -qi "ERROR" && die "layout reported an error"
 
-say "Curating system tray (scripts/tray-config.js)"
-TRAY_OUT="$(gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell \
-  --method org.kde.PlasmaShell.evaluateScript "$(cat "$ROOT/scripts/tray-config.js")" 2>&1)" || die "tray script failed: $TRAY_OUT"
-echo "$TRAY_OUT"
-echo "$TRAY_OUT" | grep -qi "ERROR" && die "tray script reported an error"
+say "Curating system tray (scripts/curate-tray.sh)"
+# Goes through scripts/curate-tray.sh so the pinned applets are recreated even
+# when the config already holds the right value (a plain re-write is a no-op
+# to plasmashell and can leave the tray empty).
+bash "$ROOT/scripts/curate-tray.sh" || die "tray curation failed"
 
 # ---- Panel visibility on Wayland -----------------------------------------
 # The implementation lives in scripts/set-panel-visibility.sh because

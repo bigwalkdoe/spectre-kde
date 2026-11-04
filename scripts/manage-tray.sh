@@ -30,6 +30,9 @@ write_tray_config() {
         echo '// spectre-kde — system tray curation (Plasma 6 scripting API)'
         echo '//'
         echo '// Curates which status items are pinned in the top-bar system tray, in order.'
+        echo '//'
+        echo '// extraItems pins the items (a change here makes plasmashell recreate the'
+        echo '// applets); shownItems forces them into the always-visible row.'
         echo ''
         echo 'var log = [];'
         echo 'var tray = null;'
@@ -47,13 +50,8 @@ write_tray_config() {
         echo '    }'
         echo '}'
         echo ''
-        echo 'if (!tray) {'
-        echo '    log.push("ERROR systemtray not found in any panel");'
-        echo '} else {'
-        echo '    tray.currentConfigGroup = ["General"];'
-        echo '    try {'
-        echo '        tray.writeConfig('
-        echo '            "extraItems",'
+        echo ''
+        echo 'var ITEMS ='
         local n=${#items[@]}
         local i=0
         for it in "${items[@]}"; do
@@ -62,9 +60,17 @@ write_tray_config() {
             if [ "$i" -lt "$n" ]; then comma=","; fi
             local plus=""
             if [ "$i" -lt "$n" ]; then plus=" +"; fi
-            echo "            \"$it$comma\"$plus"
+            echo "    \"$it$comma\"$plus"
         done
-        echo '        );'
+        echo ';'
+        echo ''
+        echo 'if (!tray) {'
+        echo '    log.push("ERROR systemtray not found in any panel");'
+        echo '} else {'
+        echo '    tray.currentConfigGroup = ["General"];'
+        echo '    try {'
+        echo '        tray.writeConfig("extraItems", ITEMS);'
+        echo '        tray.writeConfig("shownItems", ITEMS);'
         echo '        log.push("systemtray curated");'
         echo '    } catch (e) {'
         echo '        log.push("WARN tray curation failed (non-fatal): " + e);'
@@ -81,14 +87,12 @@ list_tray() {
     python3 - "$TC" <<'PY'
 import re, sys
 s = open(sys.argv[1]).read()
-m = re.search(r'extraItems",?\s*\n(.*?)\);', s, re.S)
+m = re.search(r'var ITEMS\s*=\s*(.*?);', s, re.S)
 if not m:
-    print("  (could not parse extraItems)")
+    print("  (could not parse ITEMS)")
     sys.exit(0)
-for line in m.group(1).splitlines():
-    line = line.strip().rstrip('+').strip().strip('"').rstrip(',')
-    if line:
-        print("  " + line)
+for item in re.findall(r'"(org\.kde\.plasma\.[A-Za-z0-9.-]+),?"', m.group(1)):
+    print("  " + item)
 PY
     echo "=========================================="
     echo -e "\n${BLUE}Run './apply.sh' or './quick-update.sh' to apply changes${NC}"
@@ -109,13 +113,11 @@ current_items() {
     python3 - "$TC" <<'PY'
 import re, sys
 s = open(sys.argv[1]).read()
-m = re.search(r'extraItems",?\s*\n(.*?)\);', s, re.S)
+m = re.search(r'var ITEMS\s*=\s*(.*?);', s, re.S)
 if not m:
     sys.exit(0)
-for line in m.group(1).splitlines():
-    line = line.strip().rstrip('+').strip().strip('"').rstrip(',')
-    if line:
-        print(line)
+for item in re.findall(r'"(org\.kde\.plasma\.[A-Za-z0-9.-]+),?"', m.group(1)):
+    print(item)
 PY
 }
 
