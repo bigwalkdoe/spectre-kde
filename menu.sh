@@ -102,10 +102,11 @@ show_menu() {
     echo -e "${GREEN}31)${NC} Manage Power Settings"
     echo -e "${GREEN}32)${NC} Clean Old Backups"
     echo -e "${GREEN}33)${NC} Manage Cursor Theme"
+    echo -e "${GREEN}34)${NC} Manage Icon Theme"
     echo ""
     echo -e "${RED}0)${NC} Exit"
     echo ""
-    echo -n "Enter your choice [0-33]: "
+    echo -n "Enter your choice [0-34]: "
 }
 
 apply_menu() {
@@ -1182,6 +1183,12 @@ while true; do
         33)
             echo ""
             "$ROOT/scripts/manage-cursor.sh" status
+            echo ""
+            read -p "Press Enter to continue..."
+            ;;
+        34)
+            echo ""
+            "$ROOT/scripts/manage-icons.sh" status
             echo ""
             read -p "Press Enter to continue..."
             ;;
