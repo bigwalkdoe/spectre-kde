@@ -46,7 +46,9 @@ current_sddm() {
     status_sddm
 }
 
+# shellcheck disable=SC2120
 install_sddm() {
+    : "$@"
     echo -e "${BLUE}Installing Orchis-Mac SDDM theme...${NC}"
     if [ "$(id -u)" -ne 0 ]; then
         echo -e "${YELLOW}Root privileges required. Running with sudo...${NC}"
@@ -60,9 +62,9 @@ reinstall_sddm() {
     echo -e "${BLUE}Reinstalling Orchis-Mac SDDM theme...${NC}"
     if [ "$(id -u)" -ne 0 ]; then
         echo -e "${YELLOW}Root privileges required. Running with sudo...${NC}"
-        exec sudo "$ROOT/scripts/install-sddm-orchis.sh" --force "$@"
+        exec sudo "$ROOT/scripts/install-sddm-orchis.sh" --force
     else
-        "$ROOT/scripts/install-sddm-orchis.sh" --force "$@"
+        "$ROOT/scripts/install-sddm-orchis.sh" --force
     fi
 }
 

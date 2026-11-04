@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # spectre-kde -- scripts/manage-gtk.sh
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-RED="\033[0;31m"; GREEN="\033[0;32m"; YELLOW="\033[1;33m"; BLUE="\033[0;34m"; NC="\033[0m"
+RED="\033[0;31m"; GREEN="\033[0;32m"; BLUE="\033[0;34m"; NC="\033[0m"
 
 status_gtk() {
     echo -e "${BLUE}GTK Theme Status:${NC}"
