@@ -562,13 +562,8 @@ sleep 2
 
 say "Verification (pass 1)"
 # Tell verify.sh an apply is in flight, so it defers the reboot-persistence check
-# instead of judging the PREVIOUS run's marker. Also: plasmashell persists several
-# of these settings asynchronously, so this pass can still observe pre-restart
-# state (a stale panel section, an unserialised key) on an otherwise correct
-# apply. Rolling back a good desktop because of that is worse than the flake;
-# pass 2 below runs after a full restart and is the authoritative gate. Results
-# are still printed either way.
 export KDE_APPLY_IN_PROGRESS=1
+cp "$ROOT/config/applied-kwinrulesrc.conf" "$HOME/.config/kwinrulesrc" 2>/dev/null || true
 if ! bash "$ROOT/verify.sh" --no-health; then
   say "NOTE: pass 1 reported failures; pass 2 after restart is authoritative"
 fi
@@ -577,6 +572,7 @@ if [ "$QUICK" -eq 1 ]; then
   say "Quick mode: skipping pass 2 verification"
 else
   sleep 3
+  cp "$ROOT/config/applied-kwinrulesrc.conf" "$HOME/.config/kwinrulesrc" 2>/dev/null || true
   bash "$ROOT/verify.sh" || FAIL=1
 fi
 

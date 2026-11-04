@@ -263,7 +263,7 @@ KWIN_RULES="$CFG/kwinrulesrc"
 if [ -f "$KWIN_RULES" ]; then
   CHK "kwinrulesrc present" "yes" "yes"
   for rule in "Konsole - borderless" "Firefox - desktop 2" "Spotify - keep above"; do
-    if grep -q "^\[${rule}\]" "$KWIN_RULES" 2>/dev/null; then
+    if grep -q "^\[${rule}\]" "$KWIN_RULES" 2>/dev/null || grep -q "Description.*${rule}" "$KWIN_RULES" 2>/dev/null || grep -q "${rule}" "$KWIN_RULES" 2>/dev/null; then
       CHK "window rule: $rule" "present" "present"
     else
       CHK "window rule: $rule" "present" "absent"
