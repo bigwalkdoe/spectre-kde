@@ -945,6 +945,64 @@ power_menu() {
     done
 }
 
+fonts_menu() {
+    while true; do
+        show_header
+        show_status
+        echo -e "${BOLD}FONT MANAGEMENT${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -e "${GREEN}1)${NC} List Installed Fonts"
+        echo -e "${GREEN}2)${NC} List User Fonts"
+        echo -e "${GREEN}3)${NC} Show Font Exclusions"
+        echo -e "${GREEN}4)${NC} Rebuild Font Cache"
+        echo -e "${GREEN}5)${NC} Font Info"
+        echo -e "${RED}0)${NC} Back to Main Menu"
+        echo ""
+        echo -n "Enter your choice [0-5]: "
+        read -r choice
+        case $choice in
+            1)
+                echo ""
+                "$ROOT/scripts/manage-fonts.sh" list
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            2)
+                echo ""
+                "$ROOT/scripts/manage-fonts.sh" installed
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            3)
+                echo ""
+                "$ROOT/scripts/manage-fonts.sh" exclusions
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            4)
+                echo ""
+                "$ROOT/scripts/manage-fonts.sh" rebuild
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            5)
+                echo ""
+                "$ROOT/scripts/manage-fonts.sh" info
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo -e "${RED}Invalid choice${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
 # Main loop
 while true; do
     show_header
@@ -1102,6 +1160,9 @@ while true; do
             ;;
         28)
             splash_menu
+            ;;
+        15)
+            fonts_menu
             ;;
         29)
             sddm_menu
