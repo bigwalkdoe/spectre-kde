@@ -1162,9 +1162,6 @@ while true; do
         28)
             splash_menu
             ;;
-        15)
-            fonts_menu
-            ;;
         29)
             sddm_menu
             ;;
