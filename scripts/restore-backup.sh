@@ -27,18 +27,24 @@ AFFECTED=(
 )
 ORCHIS_LNFS="com.github.vinceliuice.Orchis com.github.vinceliuice.Orchis-dark"
 
+# NOTE: the bus list is captured into a variable first. `busctl ... | grep -q`
+# under `set -o pipefail` can false-negative: grep -q exits at the first match
+# and SIGPIPEs a still-writing busctl, making the pipeline fail even though the
+# name was found.
 wait_shell_up() {
-  local _
+  local _ names
   for _ in $(seq 1 30); do
-    busctl --user list --no-pager 2>/dev/null | grep -q '^org\.kde\.plasmashell[[:space:]]' && return 0
+    names="$(busctl --user list --no-pager 2>/dev/null || true)"
+    grep -q '^org\.kde\.plasmashell[[:space:]]' <<< "$names" && return 0
     sleep 1
   done
   return 1
 }
 wait_shell_down() {
-  local _
+  local _ names
   for _ in $(seq 1 20); do
-    busctl --user list --no-pager 2>/dev/null | grep -q '^org\.kde\.plasmashell[[:space:]]' || return 0
+    names="$(busctl --user list --no-pager 2>/dev/null || true)"
+    grep -q '^org\.kde\.plasmashell[[:space:]]' <<< "$names" || return 0
     sleep 1
   done
   return 1

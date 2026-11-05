@@ -17,7 +17,24 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-if ! busctl --user list 2>/dev/null | grep -q '^org\.kde\.plasmashell[[:space:]]'; then
+# shell_on_bus: no pipeline, so `grep -q`'s early exit can never SIGPIPE its
+# producer and trip `pipefail` into a false negative (that bug made this check
+# fail even though plasmashell owned the bus name). Retries like
+# restore-backup.sh's wait_shell_up, because apply restarts plasmashell right
+# before this runs.
+shell_on_bus() {
+    local names
+    names="$(busctl --user list 2>/dev/null || true)"
+    grep -q '^org\.kde\.plasmashell[[:space:]]' <<< "$names"
+}
+
+RETRIES="${CURATE_TRAY_RETRIES:-15}"
+ok=0
+for _ in $(seq 1 "$RETRIES"); do
+    if shell_on_bus; then ok=1; break; fi
+    sleep 1
+done
+if [ "$ok" -ne 1 ]; then
     echo "curate-tray: plasmashell is not running on the session bus" >&2
     exit 1
 fi

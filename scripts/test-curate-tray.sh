@@ -34,7 +34,8 @@ STUB
 chmod +x "$WORK/bin/busctl" "$WORK/bin/gdbus"
 export PATH="$WORK/bin:$PATH"
 
-run(){ bash "$WORK/scripts/curate-tray.sh"; }
+# Keep the plasmashell-absent case fast: one retry, no second of sleep.
+run(){ CURATE_TRAY_RETRIES=1 bash "$WORK/scripts/curate-tray.sh"; }
 
 echo "=== test-curate-tray: happy path ==="
 OUT="$(run 2>&1)"
