@@ -60,6 +60,7 @@ if (!tray) {
 } else {
     tray.currentConfigGroup = ["General"];
     tray.writeConfig("extraItems", "");
+    tray.writeConfig("shownItems", "");
     print("tray cleared");
 }'
 
