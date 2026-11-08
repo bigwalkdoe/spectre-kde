@@ -63,10 +63,9 @@ if (showPager.indexOf("@") !== -1 || showPager === "true") {
     topPanel.addWidget("org.kde.plasma.panelspacer");
 }
 if (showNetSpeed.indexOf("@") !== -1 || showNetSpeed === "true") {
-    var netspeed = topPanel.addWidget("org.kde.plasma.systemmonitor.net"); // network speed (numeric)
+    var netspeed = topPanel.addWidget("org.kde.plasma.systemmonitor.net"); // network speed (numeric, compact)
     netspeed.currentConfigGroup = ["Appearance"];
     netspeed.writeConfig("chartFace", "org.kde.ksysguard.textonly");
-    netspeed.writeConfig("title", "Network Speed");
     netspeed.currentConfigGroup = ["Sensors"];
     netspeed.writeConfig("highPrioritySensorIds", ["network/all/download", "network/all/upload"]);
     netspeed.reloadConfig();
