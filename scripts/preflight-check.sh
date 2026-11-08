@@ -139,7 +139,7 @@ fi
 # Validate topbar-config required keys
 TOPBAR_CFG="$ROOT/scripts/topbar-config"
 if [ -f "$TOPBAR_CFG" ]; then
-    for key in TOPBAR_HEIGHT_MULTIPLIER TOPBAR_SHOW_APP_MENU TOPBAR_SHOW_PAGER TOPBAR_SHOW_TRAY TOPBAR_SHOW_CLOCK; do
+    for key in TOPBAR_HEIGHT_MULTIPLIER TOPBAR_SHOW_APP_MENU TOPBAR_SHOW_PAGER TOPBAR_SHOW_NETSPEED TOPBAR_SHOW_TRAY TOPBAR_SHOW_CLOCK; do
         if grep -q "^${key}=" "$TOPBAR_CFG" 2>/dev/null; then
             ok "topbar-config: $key set"
         else

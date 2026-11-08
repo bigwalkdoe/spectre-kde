@@ -18,6 +18,7 @@ DEFAULTS=(
     "TOPBAR_HEIGHT_MULTIPLIER=10/6"
     "TOPBAR_SHOW_APP_MENU=true"
     "TOPBAR_SHOW_PAGER=true"
+    "TOPBAR_SHOW_NETSPEED=true"
     "TOPBAR_SHOW_TRAY=true"
     "TOPBAR_SHOW_CLOCK=true"
 )
@@ -59,7 +60,7 @@ list_topbar() {
 
 status_topbar() {
     echo -e "${BLUE}Top bar status:${NC}"
-    for k in TOPBAR_HEIGHT_MULTIPLIER TOPBAR_SHOW_APP_MENU TOPBAR_SHOW_PAGER TOPBAR_SHOW_TRAY TOPBAR_SHOW_CLOCK; do
+    for k in TOPBAR_HEIGHT_MULTIPLIER TOPBAR_SHOW_APP_MENU TOPBAR_SHOW_PAGER TOPBAR_SHOW_NETSPEED TOPBAR_SHOW_TRAY TOPBAR_SHOW_CLOCK; do
         echo "  $k = $(get_val "$k")"
     done
 }
@@ -70,9 +71,10 @@ toggle_topbar() {
     case "$item" in
         appmenu|app-menu|menu) key="TOPBAR_SHOW_APP_MENU" ;;
         pager) key="TOPBAR_SHOW_PAGER" ;;
+        netspeed|net-speed|network-speed) key="TOPBAR_SHOW_NETSPEED" ;;
         tray) key="TOPBAR_SHOW_TRAY" ;;
         clock) key="TOPBAR_SHOW_CLOCK" ;;
-        *) echo -e "${RED}Unknown item: $item${NC}"; return 1 ;;
+        *) echo -e "${RED}Unknown item: $item${NC} (appmenu|pager|netspeed|tray|clock)"; return 1 ;;
     esac
     local cur
     cur="$(get_val "$key")"
@@ -101,6 +103,9 @@ reset_topbar() {
         echo ""
         echo "# Show workspace pager (true/false)"
         echo "TOPBAR_SHOW_PAGER=true"
+        echo ""
+        echo "# Show network speed widget (true/false)"
+        echo "TOPBAR_SHOW_NETSPEED=true"
         echo ""
         echo "# Show system tray (true/false)"
         echo "TOPBAR_SHOW_TRAY=true"
@@ -140,13 +145,13 @@ case "${1:-list}" in
         echo "Commands:"
         echo "  list, ls          - Show top bar config"
         echo "  status, st        - Show current values"
-        echo "  toggle <item>     - Toggle appmenu|pager|tray|clock"
+        echo "  toggle <item>     - Toggle appmenu|pager|netspeed|tray|clock"
         echo "  set <key> <val>   - Set a config key"
         echo "  reset             - Restore defaults"
         echo ""
         echo "Examples:"
         echo "  $0 list"
-        echo "  $0 toggle clock"
+        echo "  $0 toggle netspeed"
         echo "  $0 set TOPBAR_HEIGHT_MULTIPLIER 12/6"
         echo "  $0 reset"
         echo ""

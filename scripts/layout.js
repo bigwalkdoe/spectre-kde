@@ -51,6 +51,7 @@ topPanel.offset = 0;
 
 var showAppMenu = "@TOPBAR_SHOW_APP_MENU@";
 var showPager = "@TOPBAR_SHOW_PAGER@";
+var showNetSpeed = "@TOPBAR_SHOW_NETSPEED@";
 var showTray = "@TOPBAR_SHOW_TRAY@";
 var showClock = "@TOPBAR_SHOW_CLOCK@";
 if (showAppMenu.indexOf("@") !== -1 || showAppMenu === "true") {
@@ -60,6 +61,15 @@ if (showAppMenu.indexOf("@") !== -1 || showAppMenu === "true") {
 if (showPager.indexOf("@") !== -1 || showPager === "true") {
     topPanel.addWidget("org.kde.plasma.pager");         // subtle workspace indicator (center)
     topPanel.addWidget("org.kde.plasma.panelspacer");
+}
+if (showNetSpeed.indexOf("@") !== -1 || showNetSpeed === "true") {
+    var netspeed = topPanel.addWidget("org.kde.plasma.systemmonitor.net"); // network speed (numeric)
+    netspeed.currentConfigGroup = ["Appearance"];
+    netspeed.writeConfig("chartFace", "org.kde.ksysguard.textonly");
+    netspeed.writeConfig("title", "Network Speed");
+    netspeed.currentConfigGroup = ["Sensors"];
+    netspeed.writeConfig("highPrioritySensorIds", ["network/all/download", "network/all/upload"]);
+    netspeed.reloadConfig();
 }
 if (showTray.indexOf("@") !== -1 || showTray === "true") {
     topPanel.addWidget("org.kde.plasma.systemtray");    // network / bluetooth / audio / battery ...

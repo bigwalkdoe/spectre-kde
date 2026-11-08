@@ -35,12 +35,13 @@ SKIP(){ echo "SKIP  $1"; }
 # assertions unconditional would have made every apply with a hidden tray or
 # pager roll itself back.
 TOPBAR_CFG="$ROOT/scripts/topbar-config"
-TB_APP_MENU=true; TB_PAGER=true; TB_TRAY=true; TB_CLOCK=true
+TB_APP_MENU=true; TB_PAGER=true; TB_NETSPEED=true; TB_TRAY=true; TB_CLOCK=true
 if [ -f "$TOPBAR_CFG" ]; then
   # shellcheck disable=SC1090
   . "$TOPBAR_CFG"
   TB_APP_MENU="${TOPBAR_SHOW_APP_MENU:-true}"
   TB_PAGER="${TOPBAR_SHOW_PAGER:-true}"
+  TB_NETSPEED="${TOPBAR_SHOW_NETSPEED:-true}"
   TB_TRAY="${TOPBAR_SHOW_TRAY:-true}"
   TB_CLOCK="${TOPBAR_SHOW_CLOCK:-true}"
 fi
@@ -98,6 +99,11 @@ if want "$TB_PAGER"; then
   CHK "workspace pager in top bar" "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.pager')"
 else
   SKIP "workspace pager in top bar (disabled in scripts/topbar-config)"
+fi
+if want "$TB_NETSPEED"; then
+  CHK "network speed in top bar" "1" "$(printf '%s' "$TP" | grep -c 'org.kde.plasma.systemmonitor.net')"
+else
+  SKIP "network speed in top bar (disabled in scripts/topbar-config)"
 fi
 CHK "bottom dock present"     "1" "$(printf '%s' "$DP" | grep -c 'org.kde.plasma.icontasks')"
 CHK "launcher at start of dock" "1" "$(printf '%s' "$DP" | grep -c 'org.kde.plasma.kickoff')"

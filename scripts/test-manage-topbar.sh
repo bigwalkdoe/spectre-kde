@@ -18,6 +18,7 @@ run(){ HOME="$WORK" bash "$WORK/scripts/manage-topbar.sh" "$@"; }
 echo "=== test-manage-topbar: status defaults ==="
 OUT="$(run status)"
 case "$OUT" in *"TOPBAR_SHOW_CLOCK = true"*) ok "status shows clock true" ;; *) no "status missing: $OUT" ;; esac
+case "$OUT" in *"TOPBAR_SHOW_NETSPEED = true"*) ok "status shows netspeed true" ;; *) no "status missing netspeed: $OUT" ;; esac
 
 echo "=== test-manage-topbar: toggle ==="
 OUT="$(run toggle clock)"
@@ -30,6 +31,16 @@ else
 fi
 OUT="$(run toggle clock)"
 case "$OUT" in *"Enabled:"*) ok "toggle clock on" ;; *) no "toggle on failed: $OUT" ;; esac
+
+OUT="$(run toggle netspeed)"
+case "$OUT" in *"Disabled:"*) ok "toggle netspeed off" ;; *) no "toggle netspeed failed: $OUT" ;; esac
+if grep -q '^TOPBAR_SHOW_NETSPEED=false$' "$WORK/scripts/topbar-config"; then
+    ok "netspeed config updated to false"
+else
+    no "netspeed config not updated"
+fi
+OUT="$(run toggle netspeed)"
+case "$OUT" in *"Enabled:"*) ok "toggle netspeed on" ;; *) no "toggle netspeed on failed: $OUT" ;; esac
 
 echo "=== test-manage-topbar: set ==="
 OUT="$(run set TOPBAR_HEIGHT_MULTIPLIER 12/6)"

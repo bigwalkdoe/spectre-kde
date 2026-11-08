@@ -10,6 +10,9 @@ TOPBAR_SHOW_APP_MENU=true
 # Show workspace pager (true/false)
 TOPBAR_SHOW_PAGER=true
 
+# Show network speed widget (true/false)
+TOPBAR_SHOW_NETSPEED=true
+
 # Show system tray (true/false)
 TOPBAR_SHOW_TRAY=true
 
