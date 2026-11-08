@@ -77,6 +77,9 @@ echo -e "${YELLOW}Setting panel visibility (dodge windows)...${NC}"
 bash "$ROOT/scripts/set-panel-visibility.sh" "$LAYOUT_OUT" 2 \
   || { echo "Failed to set panel visibility"; exit 1; }
 
+echo -e "${YELLOW}Applying top-bar netspeed polish...${NC}"
+bash "$ROOT/scripts/set-netspeed-compact.sh" "$LAYOUT_OUT" || true
+
 echo -e "${YELLOW}Cleaning stale plasmashellrc entries...${NC}"
 bash "$ROOT/scripts/clean-plasmashellrc.sh" || true
 

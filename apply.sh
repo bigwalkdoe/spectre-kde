@@ -522,6 +522,9 @@ say "Panel visibility mode (fullscreen-aware)"
 bash "$ROOT/scripts/set-panel-visibility.sh" "$LAYOUT_OUT" "$PANEL_VISIBILITY" \
   || die "could not set panel visibility"
 
+say "Top-bar netspeed polish (compact)"
+bash "$ROOT/scripts/set-netspeed-compact.sh" "$LAYOUT_OUT" || true
+
 say "Clean stale plasmashellrc entries"
 bash "$ROOT/scripts/clean-plasmashellrc.sh" || true
 
