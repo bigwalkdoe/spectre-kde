@@ -31,6 +31,10 @@ echo ""
 [ -f "$PROFILE_DIR/dock-launchers.list" ] && cp "$PROFILE_DIR/dock-launchers.list" "$ROOT/scripts/" && echo "✓ Imported dock launchers"
 [ -f "$PROFILE_DIR/dock-config" ] && cp "$PROFILE_DIR/dock-config" "$ROOT/scripts/" && echo "✓ Imported dock config"
 
+# Import top bar and tray configuration
+[ -f "$PROFILE_DIR/topbar-config" ] && cp "$PROFILE_DIR/topbar-config" "$ROOT/scripts/" && echo "✓ Imported top bar config"
+[ -f "$PROFILE_DIR/tray-config.js" ] && cp "$PROFILE_DIR/tray-config.js" "$ROOT/scripts/" && echo "✓ Imported tray config"
+
 # Import autostart
 [ -f "$PROFILE_DIR/autostart.list" ] && cp "$PROFILE_DIR/autostart.list" "$ROOT/scripts/" && echo "✓ Imported autostart list"
 

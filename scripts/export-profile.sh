@@ -16,6 +16,10 @@ mkdir -p "$PROFILE_DIR"
 cp "$ROOT/scripts/dock-launchers.list" "$PROFILE_DIR/" 2>/dev/null || true
 cp "$ROOT/scripts/dock-config" "$PROFILE_DIR/" 2>/dev/null || true
 
+# Export top bar and tray configuration
+cp "$ROOT/scripts/topbar-config" "$PROFILE_DIR/" 2>/dev/null || true
+cp "$ROOT/scripts/tray-config.js" "$PROFILE_DIR/" 2>/dev/null || true
+
 # Export autostart
 cp "$ROOT/scripts/autostart.list" "$PROFILE_DIR/" 2>/dev/null || true
 

@@ -2,6 +2,7 @@
 .applied-*
 # apply.sh concurrency lock
 .apply.lock
-profiles/
+profiles/*
+!profiles/dev/
 # runtime post-apply screenshots
 screenshots/post-apply-*.png

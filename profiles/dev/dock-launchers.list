@@ -1,0 +1,27 @@
+# spectre-kde -- pinned dock launchers
+#
+# One app per line, in dock order. Blank lines and # comments are ignored.
+# To remove an app from the dock, delete its line here and re-run ./apply.sh --
+# unpinning it by hand does not stick, because layout.js rewrites the whole list
+# on every apply.
+#
+# An id is only pinned if its .desktop file is actually installed; anything
+# missing is skipped and reported during apply, so a stale id can never turn into
+# a generic "Unknown application" tile. Separate alternatives for the same app
+# with "|": the first one that is installed wins, so an app is pinned at most
+# once. Use that where distros and third-party repos disagree on the id.
+
+org.kde.dolphin.desktop                  # Files
+org.kde.konsole.desktop                  # Terminal
+terminator.desktop                       # Terminal
+cursor.desktop                           # Cursor
+com.microsoft.VSCode.desktop|code.desktop # VS Code (the RPM ships the long id)
+nvim.desktop                             # Neovim
+virt-manager.desktop                     # Virtual Machines
+md.obsidian.Obsidian.desktop             # Obsidian / notes
+com.google.Chrome.desktop                # Chrome (docs/research)
+org.mozilla.firefox.desktop              # Firefox
+org.torproject.torbrowser-launcher.desktop # Tor Browser
+org.telegram.desktop.desktop             # Telegram (upstream id really ends in .desktop.desktop)
+com.spotify.Client.desktop               # Spotify
+vlc.desktop                              # VLC

@@ -1,0 +1,2 @@
+Profile: dev
+Description: Developer-focused preset (dev-loop dock order, netspeed top bar, standard tray).
