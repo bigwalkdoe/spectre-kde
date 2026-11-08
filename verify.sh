@@ -479,6 +479,19 @@ else
   FAILED=$((FAILED+1))
 fi
 
+echo "--- declared shortcuts (manage-shortcuts.sh) ---"
+if [ -x "$ROOT/scripts/manage-shortcuts.sh" ] && [ -f "$ROOT/scripts/shortcuts-declared.conf" ]; then
+  if SC_OUT="$(bash "$ROOT/scripts/manage-shortcuts.sh" status 2>&1)"; then
+    echo "PASS  declared shortcuts match live ($(printf '%s' "$SC_OUT" | grep '^ok=' | tail -1))"
+  else
+    echo "FAIL  declared shortcuts drift/missing"
+    printf '%s\n' "$SC_OUT" | tail -12
+    FAILED=$((FAILED+1))
+  fi
+else
+  SKIP "declared shortcuts check (manage-shortcuts.sh not installed)"
+fi
+
 echo "--- wallpaper ---"
 WALL_NAME="wavy_lines_v02_5120x2880.png"
 WALL_LIVE="$HOME/.local/share/wallpapers/kde-setup-02/$WALL_NAME"
