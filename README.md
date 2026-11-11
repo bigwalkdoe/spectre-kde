@@ -51,6 +51,13 @@ cd spectre-kde
 
 For first-time setup, run `./welcome.sh` for a guided tour, or `./doctor.sh` to check dependencies.
 
+## Documentation
+
+- [Troubleshooting](TROUBLESHOOTING.md) — common issues, diagnostics, and recovery
+- [Contributing](CONTRIBUTING.md) — development workflow, running tests, and contribution guidelines
+- [Screenshots](screenshots/README.md) — before/after images and layout examples
+- [Agent guidance](AGENTS.md) — repository conventions for AI/code agents
+
 ---
 
 ## All-in-One Tools
