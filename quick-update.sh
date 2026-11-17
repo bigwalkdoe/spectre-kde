@@ -12,6 +12,9 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+say(){ echo; echo "### $*"; }
+die(){ echo "FAIL: $*" >&2; FAIL=1; exit 1; }
+
 echo -e "${BLUE}Quick update: Dock and Panel Layout${NC}"
 echo ""
 
@@ -23,6 +26,7 @@ DOCK_POSITION="${DOCK_POSITION:-bottom}"
 DOCK_HEIGHT_MULTIPLIER="${DOCK_HEIGHT_MULTIPLIER:-26/9}"
 DOCK_FLOATING="${DOCK_FLOATING:-true}"
 DOCK_CENTERED="${DOCK_CENTERED:-true}"
+DOCK_FIT_TO_CONTENT="${DOCK_FIT_TO_CONTENT:-true}"
 
 # Load topbar configuration
 TOPBAR_CFG="$ROOT/scripts/topbar-config"
@@ -49,6 +53,7 @@ LAYOUT_JS="$(sed -e "s|@DOCK_LAUNCHERS@|$DOCK_LAUNCHERS|g" \
                   -e "s|@DOCK_HEIGHT_MULTIPLIER@|$DOCK_HEIGHT_MULTIPLIER|g" \
                   -e "s|@DOCK_FLOATING@|$DOCK_FLOATING|g" \
                   -e "s|@DOCK_CENTERED@|$DOCK_CENTERED|g" \
+                  -e "s|@DOCK_FIT_TO_CONTENT@|$DOCK_FIT_TO_CONTENT|g" \
                   -e "s|@TOPBAR_HEIGHT_MULTIPLIER@|$TOPBAR_HEIGHT_MULTIPLIER|g" \
                   -e "s|@TOPBAR_SHOW_APP_MENU@|$TOPBAR_SHOW_APP_MENU|g" \
                   -e "s|@TOPBAR_SHOW_PAGER@|$TOPBAR_SHOW_PAGER|g" \
@@ -85,3 +90,20 @@ bash "$ROOT/scripts/clean-plasmashellrc.sh" || true
 
 echo -e "${GREEN}✓ Quick update complete!${NC}"
 echo "Changes to dock/apps/tray should be applied immediately."
+
+# Persist dock settings so they survive reboots.
+DOCK_FIT_TO_CONTENT="${DOCK_FIT_TO_CONTENT:-true}"
+DOCK_CENTERED="${DOCK_CENTERED:-true}"
+DOCK_FLOATING="${DOCK_FLOATING:-true}"
+
+panel_ids=$(echo "$LAYOUT_OUT" | grep -oE 'panelIds=[0-9]+,[0-9]+' | head -1 | cut -d= -f2 | tr ',' ' ')
+for pid in $panel_ids; do
+    kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $pid" --key alignment center 2>/dev/null || true
+    kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $pid" --key minimumLength -1 2>/dev/null || true
+    kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $pid" --key maximumLength -1 2>/dev/null || true
+    if [ "$DOCK_FLOATING" = "true" ]; then
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $pid" --key floating true 2>/dev/null || true
+    fi
+done
+
+say "Lock screen: ensure system MainBlock.qml is intact"

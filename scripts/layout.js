@@ -91,6 +91,8 @@ var dockFloat = "@DOCK_FLOATING@";
 if (dockFloat.indexOf("@") !== -1) dockFloat = "true";
 var dockCenter = "@DOCK_CENTERED@";
 if (dockCenter.indexOf("@") !== -1) dockCenter = "true";
+var dockFit = "@DOCK_FIT_TO_CONTENT@";
+if (dockFit.indexOf("@") !== -1) dockFit = "true";
 
 dock.location = dockPos;
 try {
@@ -107,8 +109,10 @@ try {
 dock.floating = (dockFloat === "true");                               // floating visual (rounded, margins)
 dock.offset = 0;                                    // visibility set by apply.sh, see above
 dock.alignment = (dockCenter === "true") ? "center" : "left";                          // centered on the screen
-dock.minimumLength = -1;                            // "fit content" (shrinks to the icons)
-dock.maximumLength = -1;
+if (dockFit === "true") {
+    dock.minimumLength = -1;                            // "fit content" (shrinks to the icons)
+    dock.maximumLength = -1;
+}
 
 dock.addWidget("org.kde.plasma.kickoff");           // launcher at the beginning
 
