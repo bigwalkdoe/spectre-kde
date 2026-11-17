@@ -113,6 +113,9 @@ dock.alignment = (dockCenter === "true") ? "center" : "left";                   
 if (dockFit === "true") {
     dock.minimumLength = -1;                            // "fit content" (shrinks to the icons)
     dock.maximumLength = -1;
+    dock.lengthMode = "fit";
+} else {
+    dock.lengthMode = "fill";
 }
 
 dock.addWidget("org.kde.plasma.kickoff");           // launcher at the beginning

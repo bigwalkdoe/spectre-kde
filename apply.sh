@@ -553,6 +553,9 @@ if [ -n "$DOCK_PANEL" ]; then
             kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group "$grp" --key minLength -- "-1" 2>/dev/null || true
             kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group "$grp" --key maxLength -- "-1" 2>/dev/null || true
         done
+        gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell --method org.kde.PlasmaShell.evaluateScript "var p=panelById($DOCK_PANEL); if(p){p.lengthMode='fit';}" >/dev/null 2>&1 || true
+    else
+        gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell --method org.kde.PlasmaShell.evaluateScript "var p=panelById($DOCK_PANEL); if(p){p.lengthMode='fill';}" >/dev/null 2>&1 || true
     fi
     if [ "$DOCK_FLOATING" = "true" ]; then
         kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --key floating 1 2>/dev/null || true
