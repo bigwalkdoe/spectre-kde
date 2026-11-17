@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 say(){ echo; echo "### $*"; }
-die(){ echo "FAIL: $*" >&2; FAIL=1; exit 1; }
+die(){ echo "FAIL: $*" >&2; exit 1; }
 
 echo -e "${BLUE}Quick update: Dock and Panel Layout${NC}"
 echo ""
