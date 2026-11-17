@@ -96,14 +96,23 @@ DOCK_FIT_TO_CONTENT="${DOCK_FIT_TO_CONTENT:-true}"
 DOCK_CENTERED="${DOCK_CENTERED:-true}"
 DOCK_FLOATING="${DOCK_FLOATING:-true}"
 
-panel_ids=$(echo "$LAYOUT_OUT" | grep -oE 'panelIds=[0-9]+,[0-9]+' | head -1 | cut -d= -f2 | tr ',' ' ')
-for pid in $panel_ids; do
-    kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $pid" --key alignment center 2>/dev/null || true
-    kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $pid" --key minimumLength -1 2>/dev/null || true
-    kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $pid" --key maximumLength -1 2>/dev/null || true
-    if [ "$DOCK_FLOATING" = "true" ]; then
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $pid" --key floating true 2>/dev/null || true
+# layout.js reports panelIds=topPanel,dock
+DOCK_PANEL="$(echo "$LAYOUT_OUT" | grep -oE 'panelIds=[0-9]+,[0-9]+' | head -1 | cut -d= -f2 | cut -d, -f2)"
+if [ -n "$DOCK_PANEL" ]; then
+    if [ "$DOCK_CENTERED" = "true" ]; then
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --key alignment 132 2>/dev/null || true
+    else
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --key alignment 1 2>/dev/null || true
     fi
-done
+    if [ "$DOCK_FIT_TO_CONTENT" = "true" ]; then
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Defaults --key minLength -1 2>/dev/null || true
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Defaults --key maxLength -1 2>/dev/null || true
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Horizontal1920 --key minLength -1 2>/dev/null || true
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Horizontal1920 --key maxLength -1 2>/dev/null || true
+    fi
+    if [ "$DOCK_FLOATING" = "true" ]; then
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --key floating 1 2>/dev/null || true
+    fi
+fi
 
 say "Lock screen: ensure system MainBlock.qml is intact"
