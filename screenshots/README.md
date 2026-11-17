@@ -2,17 +2,13 @@
 
 Reference captures. **No script reads any of this** — it is documentation only.
 
+These images are clean desktop captures (wallpaper + panels) taken without open windows to avoid exposing personal information.
+
 | File | What it is |
 |---|---|
-| `desktop-dual-20260924.png` | Current state after `./apply.sh`, dual monitor. The canonical "what this looks like" capture. |
-| `desktop-after-apply.png` | Single-screen capture from the initial apply. |
-| `baseline-check.png` | Before/after baseline used while first validating `apply.sh`. |
+| `desktop-dual-20260924.png` | Dual-monitor desktop capture (wallpaper + panels) |
+| `desktop-after-apply.png` | Single-monitor desktop capture (wallpaper + panels) |
+| `baseline-check.png` | Single-monitor desktop capture (wallpaper + panels) |
+| `post-apply-*.png` | Additional desktop captures (wallpaper + panels) from apply/update runs |
 
-The panel layout that actually gets applied is `../scripts/layout.js`, written
-through `PlasmaShell.evaluateScript`.
-
-Removed in cleanup: the `fs-test-*.png` / `fullscreen-test.png` scratch captures
-from debugging fullscreen behaviour, and a stray `layout-applied.js` that was a
-`layout-templates`-format *export* of the applied layout — an output artifact
-that embedded machine-specific values (absolute wallpaper path, screen
-geometry) and was never an input to `apply.sh`.
+The panel layout applied by this project is defined in [`../scripts/layout.js`](../scripts/layout.js) and applied via `PlasmaShell.evaluateScript`.
