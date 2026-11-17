@@ -123,4 +123,14 @@ if [ -n "$DOCK_PANEL" ]; then
     fi
 fi
 
+# Restart plasmashell so panel geometry/struts (e.g. fit-content dock) are
+# picked up correctly for window snapping/maximization and dodge behavior.
+echo -e "${YELLOW}Restarting plasmashell to refresh panel geometry...${NC}"
+systemctl --user restart plasma-plasmashell.service 2>/dev/null || true
+for _ in $(seq 1 30); do
+  names="$(busctl --user list --no-pager 2>/dev/null || true)"
+  grep -q '^org\.kde\.plasmashell[[:space:]]' <<< "$names" && break
+  sleep 1
+done
+
 say "Lock screen: ensure system MainBlock.qml is intact"
