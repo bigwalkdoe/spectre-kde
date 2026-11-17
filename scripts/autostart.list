@@ -8,6 +8,9 @@
 # Format: <desktop-file-id>  # optional comment
 # Example: org.kde.konsole.desktop  # Terminal
 
+# Active entries:
+terminator.desktop                         # Terminal (opens on login, replaces konsole autostart)
+
 # Example entries (uncomment and customize):
 # org.kde.kdeconnect.daemon.desktop        # KDE Connect
 # org.kde.plasma.vault.desktop             # Plasma Vault

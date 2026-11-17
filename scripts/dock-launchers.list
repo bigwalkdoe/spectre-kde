@@ -13,7 +13,6 @@
 
 org.kde.dolphin.desktop                  # Files
 org.kde.konsole.desktop                  # Terminal
-terminator.desktop                       # Terminal
 cursor.desktop                           # Cursor
 com.microsoft.VSCode.desktop|code.desktop # VS Code (the RPM ships the long id)
 nvim.desktop                             # Neovim
