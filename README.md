@@ -84,7 +84,7 @@ A selection of captured states from `screenshots/` (see [`screenshots/README.md`
 | | |
 |---|---|
 | <img src="screenshots/desktop-dual-20260924.png" alt="Dual desktop layout" width="100%"> | <img src="screenshots/desktop-after-apply.png" alt="Desktop after apply" width="100%"> |
-| <img src="screenshots/post-apply-20261117-194922.png" alt="Post-apply layout (latest)" width="100%"> | <img src="screenshots/baseline-check.png" alt="Baseline check" width="100%"> |
+| <img src="screenshots/desktop-latest.png" alt="Desktop layout (latest)" width="100%"> | <img src="screenshots/baseline-check.png" alt="Baseline check" width="100%"> |
 
 ## Quick start
 
