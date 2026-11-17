@@ -3,10 +3,11 @@
 # Post-layout polish for the top-bar network speed widget.
 #
 # layout.js creates org.kde.plasma.systemmonitor.net with a text-only face
-# (numeric up/down). Some compact label/title tweaks are easier to apply via
-# targeted appletsrc config after the widget exists than through the scripting
-# API string passed to gdbus evaluateScript. This script is best-effort: it
-# warns on problems but exits 0 so a cosmetic polish issue never blocks apply.
+# (minimal download-only readout, kept adjacent to the system tray). Some
+# compact label/title tweaks are easier to apply via targeted appletsrc config
+# after the widget exists than through the scripting API. This script is
+# best-effort: it warns on problems but exits 0 so a cosmetic polish issue
+# never blocks apply.
 #
 # Usage: set-netspeed-compact.sh "<layout.js output>"
 set -u
@@ -67,12 +68,12 @@ fi
 
 BASE=(--file "$APPLET_RC" --group Containments --group "$TOP_PANEL" --group Applets --group "$APPLET_ID" --group Configuration)
 
-# Keep text-only numeric sensors and minimize chrome. sensorLabels are not set
+# Keep a minimal text-only readout and remove chrome. sensorLabels are not set
 # here: the controller key/format varies and gdbus/kwriteconfig6 handling is
-# fragile; the text-only face with download+upload sensors is the reliable core.
+# fragile; the text-only face with a single download sensor is the reliable core.
 kwriteconfig6 "${BASE[@]}" --group Appearance --key chartFace "org.kde.ksysguard.textonly" 2>/dev/null || true
 kwriteconfig6 "${BASE[@]}" --group Appearance --key title --delete 2>/dev/null || true
-kwriteconfig6 "${BASE[@]}" --group Sensors --key highPrioritySensorIds '["network/all/download","network/all/upload"]' 2>/dev/null || true
+kwriteconfig6 "${BASE[@]}" --group Sensors --key highPrioritySensorIds '["network/all/download"]' 2>/dev/null || true
 
 echo "  netspeed compact: applied to top panel $TOP_PANEL applet $APPLET_ID"
 exit 0

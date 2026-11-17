@@ -47,6 +47,7 @@ OUT="$(run "('panelIds=100,200|layout complete',)" 2>&1)"
 case "$OUT" in *"applied to top panel 100 applet 105"*) ok "found and applied" ;; *) no "out: $OUT" ;; esac
 if grep -q 'chartFace.*textonly' "$WORK/.kwrite.log"; then ok "sets textonly"; else no "no textonly write: $(cat "$WORK/.kwrite.log")"; fi
 if grep -Fq -- '--delete' "$WORK/.kwrite.log"; then ok "deletes title"; else no "no delete: $(cat "$WORK/.kwrite.log")"; fi
+if grep -Fq 'network/all/download' "$WORK/.kwrite.log" && ! grep -Fq 'network/all/upload' "$WORK/.kwrite.log"; then ok "sets download-only sensor"; else no "sensor write unexpected: $(cat "$WORK/.kwrite.log")"; fi
 
 echo "=== test-set-netspeed-compact: skips when no panel id ==="
 : > "$WORK/.kwrite.log"
