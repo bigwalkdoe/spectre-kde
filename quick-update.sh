@@ -105,10 +105,15 @@ if [ -n "$DOCK_PANEL" ]; then
         kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --key alignment 1 2>/dev/null || true
     fi
     if [ "$DOCK_FIT_TO_CONTENT" = "true" ]; then
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Defaults --key minLength -1 2>/dev/null || true
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Defaults --key maxLength -1 2>/dev/null || true
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Horizontal1920 --key minLength -1 2>/dev/null || true
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Horizontal1920 --key maxLength -1 2>/dev/null || true
+        # Write fit-to-content in all relevant groups (Defaults + any screen-specific groups)
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Defaults --key minLength -- "-1" 2>/dev/null || true
+        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Defaults --key maxLength -- "-1" 2>/dev/null || true
+        # Update any existing screen-specific length groups (e.g. Horizontal1920, Horizontal2560)
+        for grp in $(grep -oE "^\[PlasmaViews\]\[Panel ${DOCK_PANEL}\]\[[^]]+\]" ~/.config/plasmashellrc 2>/dev/null | sed 's/.*\]\[\([^]]*\)\]$/\1/'); do
+            case "$grp" in Defaults) continue ;; esac
+            kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group "$grp" --key minLength -- "-1" 2>/dev/null || true
+            kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group "$grp" --key maxLength -- "-1" 2>/dev/null || true
+        done
     fi
     if [ "$DOCK_FLOATING" = "true" ]; then
         kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --key floating 1 2>/dev/null || true
