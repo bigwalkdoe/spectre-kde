@@ -15,19 +15,50 @@ set -u
 APPLET_RC="plasma-org.kde.plasma.desktop-appletsrc"
 LAYOUT_OUT="${1:-}"
 
-# Read TOPBAR_SHOW_NETSPEED from config if available.
+# Read netspeed config if available.
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TOPBAR_CFG="$ROOT/scripts/topbar-config"
 TOPBAR_SHOW_NETSPEED=true
+TOPBAR_NETSPEED_MODE=dual
+TOPBAR_NETSPEED_LABELS=false
 if [ -f "$TOPBAR_CFG" ]; then
   # shellcheck disable=SC1090
   . "$TOPBAR_CFG"
   TOPBAR_SHOW_NETSPEED="${TOPBAR_SHOW_NETSPEED:-true}"
+  TOPBAR_NETSPEED_MODE="${TOPBAR_NETSPEED_MODE:-dual}"
+  TOPBAR_NETSPEED_LABELS="${TOPBAR_NETSPEED_LABELS:-false}"
 fi
 if [ "$TOPBAR_SHOW_NETSPEED" != "true" ]; then
   echo "  netspeed compact: disabled in topbar-config, skipping"
   exit 0
 fi
+
+case "$TOPBAR_NETSPEED_MODE" in
+  download)
+    SENSOR_IDS='["network/all/download"]'
+    if [ "$TOPBAR_NETSPEED_LABELS" = "true" ]; then
+      SENSOR_LABELS='{"network/all/download":"Download"}'
+    else
+      SENSOR_LABELS='{"network/all/download":" "}'
+    fi
+    ;;
+  upload)
+    SENSOR_IDS='["network/all/upload"]'
+    if [ "$TOPBAR_NETSPEED_LABELS" = "true" ]; then
+      SENSOR_LABELS='{"network/all/upload":"Upload"}'
+    else
+      SENSOR_LABELS='{"network/all/upload":" "}'
+    fi
+    ;;
+  dual|*)
+    SENSOR_IDS='["network/all/download","network/all/upload"]'
+    if [ "$TOPBAR_NETSPEED_LABELS" = "true" ]; then
+      SENSOR_LABELS='{"network/all/download":"Down","network/all/upload":"Up"}'
+    else
+      SENSOR_LABELS='{"network/all/download":" ","network/all/upload":" "}'
+    fi
+    ;;
+esac
 
 TOP_PANEL="$(printf '%s' "$LAYOUT_OUT" | grep -oE 'panelIds=[0-9]+,[0-9]+' | head -1 | cut -d= -f2 | cut -d, -f1)"
 if [ -z "$TOP_PANEL" ]; then
@@ -68,12 +99,11 @@ fi
 
 BASE=(--file "$APPLET_RC" --group Containments --group "$TOP_PANEL" --group Applets --group "$APPLET_ID" --group Configuration)
 
-# Keep a minimal text-only readout and remove chrome/labels. sensorLabels are
-# set to blank strings so the face shows values without "Download"/"Upload" text.
+# Apply text-only readout and configured sensors/labels.
 kwriteconfig6 "${BASE[@]}" --group Appearance --key chartFace "org.kde.ksysguard.textonly" 2>/dev/null || true
 kwriteconfig6 "${BASE[@]}" --group Appearance --key title --delete 2>/dev/null || true
-kwriteconfig6 "${BASE[@]}" --group Sensors --key highPrioritySensorIds '["network/all/download","network/all/upload"]' 2>/dev/null || true
-kwriteconfig6 "${BASE[@]}" --group Sensors --key sensorLabels '{"network/all/download":" ","network/all/upload":" "}' 2>/dev/null || true
+kwriteconfig6 "${BASE[@]}" --group Sensors --key highPrioritySensorIds "$SENSOR_IDS" 2>/dev/null || true
+kwriteconfig6 "${BASE[@]}" --group Sensors --key sensorLabels "$SENSOR_LABELS" 2>/dev/null || true
 
-echo "  netspeed compact: applied to top panel $TOP_PANEL applet $APPLET_ID"
+echo "  netspeed compact: applied to top panel $TOP_PANEL applet $APPLET_ID (mode=$TOPBAR_NETSPEED_MODE labels=$TOPBAR_NETSPEED_LABELS)"
 exit 0

@@ -19,6 +19,8 @@ echo "=== test-manage-topbar: status defaults ==="
 OUT="$(run status)"
 case "$OUT" in *"TOPBAR_SHOW_CLOCK = true"*) ok "status shows clock true" ;; *) no "status missing: $OUT" ;; esac
 case "$OUT" in *"TOPBAR_SHOW_NETSPEED = true"*) ok "status shows netspeed true" ;; *) no "status missing netspeed: $OUT" ;; esac
+case "$OUT" in *"TOPBAR_NETSPEED_MODE = dual"*) ok "status shows netspeed mode default" ;; *) no "status missing netspeed mode: $OUT" ;; esac
+case "$OUT" in *"TOPBAR_NETSPEED_LABELS = false"*) ok "status shows netspeed labels default" ;; *) no "status missing netspeed labels: $OUT" ;; esac
 
 echo "=== test-manage-topbar: toggle ==="
 OUT="$(run toggle clock)"
@@ -59,6 +61,25 @@ if grep -q '^TOPBAR_SHOW_CLOCK=true$' "$WORK/scripts/topbar-config"; then
 else
     no "reset did not restore defaults"
 fi
+grep -q '^TOPBAR_NETSPEED_MODE=dual$' "$WORK/scripts/topbar-config" && ok "reset restores netspeed mode" || no "reset missing netspeed mode"
+grep -q '^TOPBAR_NETSPEED_LABELS=false$' "$WORK/scripts/topbar-config" && ok "reset restores netspeed labels" || no "reset missing netspeed labels"
+
+echo "=== test-manage-topbar: set netspeed mode ==="
+OUT="$(run set TOPBAR_NETSPEED_MODE download)"
+case "$OUT" in *"Set TOPBAR_NETSPEED_MODE=download"*) ok "set netspeed mode" ;; *) no "set netspeed mode failed: $OUT" ;; esac
+grep -q '^TOPBAR_NETSPEED_MODE=download$' "$WORK/scripts/topbar-config" && ok "config reflects netspeed mode" || no "netspeed mode not updated"
+
+echo "=== test-manage-topbar: netspeed-mode and netspeed-labels commands ==="
+OUT="$(run netspeed-mode upload)"
+case "$OUT" in *"TOPBAR_NETSPEED_MODE=upload"*) ok "netspeed-mode command sets mode" ;; *) no "netspeed-mode failed: $OUT" ;; esac
+grep -q '^TOPBAR_NETSPEED_MODE=upload$' "$WORK/scripts/topbar-config" && ok "netspeed-mode updates config" || no "netspeed-mode config missing"
+OUT="$(run netspeed-labels on)"
+case "$OUT" in *"TOPBAR_NETSPEED_LABELS=true"*) ok "netspeed-labels on sets true" ;; *) no "netspeed-labels on failed: $OUT" ;; esac
+grep -q '^TOPBAR_NETSPEED_LABELS=true$' "$WORK/scripts/topbar-config" && ok "netspeed-labels on updates config" || no "netspeed-labels on config missing"
+OUT="$(run netspeed-labels off)"
+case "$OUT" in *"TOPBAR_NETSPEED_LABELS=false"*) ok "netspeed-labels off sets false" ;; *) no "netspeed-labels off failed: $OUT" ;; esac
+OUT="$(run netspeed-mode invalid 2>&1)"; RC=$?
+[ "$RC" -ne 0 ] && ok "netspeed-mode rejects invalid value" || no "netspeed-mode should reject invalid value"
 
 echo "=== test-manage-topbar: list ==="
 OUT="$(run list)"

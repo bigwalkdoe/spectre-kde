@@ -36,7 +36,7 @@ Name=Spectre Find Me
 EOF
 
 # Fake dock-config (ROOT becomes $WORK when script is in $WORK/scripts/)
-cat > "$WORK/dock-config" <<'EOF'
+cat > "$WORK/scripts/dock-config" <<'EOF'
 DOCK_POSITION=bottom
 DOCK_HEIGHT_MULTIPLIER=26/9
 DOCK_FLOATING=true
@@ -75,6 +75,11 @@ case "$OUT" in
   *"DOCK_POSITION=bottom"*) ok "config shows DOCK_POSITION" ;;
   *) no "config missing DOCK_POSITION: $OUT" ;;
 esac
+
+echo "=== test-manage-dock: set ==="
+OUT="$(run_dock set DOCK_CENTERED false)"
+case "$OUT" in *"Set DOCK_CENTERED=false"*) ok "set updates dock config" ;; *) no "set failed: $OUT" ;; esac
+grep -q '^DOCK_CENTERED=false$' "$WORK/scripts/dock-config" && ok "set persists key in scripts/dock-config" || no "set did not persist key"
 
 echo "=== test-manage-dock: find ==="
 OUT="$(run_dock find spectre)"

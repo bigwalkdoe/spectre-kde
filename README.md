@@ -71,7 +71,7 @@ The project is built around a simple contract:
 | **Layout** | Top menu bar (global menu, pager, network speed, tray, clock) and a centered, fit-to-content floating dock with pinned launchers |
 | **Desktop** | Clean desktop containment (no desktop icons), wallpaper management, polished defaults |
 | **Theming** | Orchis look-and-feel (light/dark), color schemes, icons, cursor, GTK 3/4, splash, optional SDDM theme assets |
-| **Top bar widgets** | Configurable app menu, pager, network speed indicator (download+upload, compact), system tray, and clock |
+| **Top bar widgets** | Configurable app menu, pager, network speed indicator (modes: dual/download/upload, labels optional), system tray, and clock |
 | **System integration** | Autostart, notifications, night light, power profiles, fonts, KWin rules, keyboard shortcuts/profile helpers |
 | **Operations** | Interactive menu, doctor/health/system-check, apply/quick-update, backup/rollback/reset/sync/status/detect flows |
 | **Profiles** | Profile export/import and presets (e.g. `profiles/dev`) for repeatable setups |
@@ -157,8 +157,8 @@ Most components can be managed independently via `scripts/manage-*.sh`:
 
 | Manager | Purpose |
 |---|---|
-| `scripts/manage-dock.sh` | Dock applications, position/behavior settings |
-| `scripts/manage-topbar.sh` | Top bar widgets/layout toggles (app menu, pager, netspeed, tray, clock) |
+| `scripts/manage-dock.sh` | Dock launchers and dock config (view/config path in `scripts/dock-config`, `set <key> <val>`, fit/center/behavior tuning) |
+| `scripts/manage-topbar.sh` | Top bar widgets/layout/config (app menu, pager, netspeed visibility/mode/labels, tray, clock, status/reset) |
 | `scripts/manage-tray.sh` | System tray pinned items |
 | `scripts/manage-wallpaper.sh` | Wallpaper settings (including per-monitor support) |
 | `scripts/manage-autostart.sh` | Autostart applications |
@@ -173,11 +173,12 @@ Most components can be managed independently via `scripts/manage-*.sh`:
 | `scripts/manage-splash.sh` | Plasma splash screen theme |
 | `scripts/manage-sddm.sh` | SDDM login screen status/install/reinstall helpers |
 | `scripts/manage-power.sh` | Power profiles (performance/balanced/power saver) |
-| `scripts/manage-profile.sh` | Profile-related operations |
+| `scripts/manage-profile.sh` | Profile operations (`list`, `show/info`, `import`, `export`, `apply`); profile names are validated |
+| `scripts/enforce-dock-view-settings.sh` | Normalize live dock panel view settings (length/alignment) across existing Plasma screen subgroups |
 | `scripts/clean-backups.sh` | Prune old timestamped backups (keep newest N) |
 
 > [!TIP]
-> Many managers modify config files used by `apply.sh` / `quick-update.sh`. After changes, re-run the appropriate apply command to see results in a live Plasma session.
+> Many managers modify config files used by `apply.sh` / `quick-update.sh`. After changes, re-run the appropriate apply command to see results in a live Plasma session. `./menu.sh` provides integrated dock/top-bar/profile workflows (including netspeed mode/labels and dock view enforcement).
 
 ## Safety & reversibility
 
@@ -191,8 +192,10 @@ When running on a live Plasma session, some changes require `plasmashell` restar
 ## Configuration & profiles
 
 - **Configs:** `config/applied-*.conf` snapshots capture applied state for KDE/GTK/fonts/power/notifications and related components
+- **Top bar config:** `scripts/topbar-config` controls visibility and netspeed behavior (`TOPBAR_SHOW_*`, `TOPBAR_NETSPEED_MODE=dual|download|upload`, `TOPBAR_NETSPEED_LABELS=true|false`, `TOPBAR_HEIGHT_MULTIPLIER`)
+- **Dock config:** `scripts/dock-config` stores dock behavior (position, floating/centered/fit-to-content, icon/label preferences); manage via `scripts/manage-dock.sh config|set` and persist/normalize view settings with `scripts/set-dock-view-settings.sh` / `scripts/enforce-dock-view-settings.sh`
 - **Profiles:** `profiles/` contains reusable presets (e.g. `profiles/dev/`) for dock/top bar/tray/autostart and related settings
-- **Profile tools:** `scripts/export-profile.sh`, `scripts/import-profile.sh`, and `scripts/manage-profile.sh` support profile workflows
+- **Profile tools:** `scripts/manage-profile.sh` (`list`, `show/info`, `import`, `export`, `apply`) plus `scripts/export-profile.sh` / `scripts/import-profile.sh` support profile workflows; profile names are validated (letters, digits, dot, underscore, hyphen)
 - **Assets:** wallpapers, SDDM theme assets, and desktop entries live under `assets/`
 
 ## Testing

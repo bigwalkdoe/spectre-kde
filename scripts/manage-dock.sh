@@ -130,8 +130,19 @@ remove_app() {
     echo -e "\n${BLUE}Run './apply.sh' to apply the changes${NC}"
 }
 
+dock_config_path() {
+    if [ -f "$ROOT/scripts/dock-config" ]; then
+        echo "$ROOT/scripts/dock-config"
+    elif [ -f "$ROOT/dock-config" ]; then
+        echo "$ROOT/dock-config"
+    else
+        echo "$ROOT/scripts/dock-config"
+    fi
+}
+
 show_config() {
-    local CFG="$ROOT/dock-config"
+    local CFG
+    CFG="$(dock_config_path)"
     echo -e "${BLUE}Dock configuration:${NC}"
     echo "==================="
     if [ -f "$CFG" ]; then
@@ -144,7 +155,33 @@ show_config() {
         echo -e "${YELLOW}No dock-config file found. Using defaults.${NC}"
     fi
     echo "==================="
-    echo -e "\n${BLUE}Edit scripts/dock-config to customize, then run './apply.sh'${NC}"
+    echo -e "\n${BLUE}Edit scripts/dock-config to customize, then run './apply.sh' or './quick-update.sh'${NC}"
+}
+
+set_config() {
+    local key="$1" val="$2"
+    local CFG
+    CFG="$(dock_config_path)"
+    mkdir -p "$(dirname "$CFG")"
+    if [ ! -f "$CFG" ]; then
+        cat > "$CFG" <<'EOF'
+# spectre-kde dock configuration
+DOCK_POSITION=bottom
+DOCK_HEIGHT_MULTIPLIER=26/9
+DOCK_FLOATING=true
+DOCK_CENTERED=true
+DOCK_FIT_TO_CONTENT=true
+DOCK_SHOW_LABELS=false
+DOCK_ICONS_ONLY=true
+EOF
+    fi
+    if grep -qE "^${key}=" "$CFG"; then
+        sed -i "s|^${key}=.*|${key}=${val}|" "$CFG"
+    else
+        echo "${key}=${val}" >> "$CFG"
+    fi
+    echo -e "${GREEN}Set ${key}=${val}${NC}"
+    echo -e "${BLUE}Run './apply.sh' or './quick-update.sh' to apply${NC}"
 }
 
 case "${1:-list}" in
@@ -153,6 +190,13 @@ case "${1:-list}" in
         ;;
     config|cfg)
         show_config
+        ;;
+    set)
+        if [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
+            echo -e "${RED}Error:${NC} usage: $0 set <key> <value>"
+            exit 1
+        fi
+        set_config "$2" "$3"
         ;;
     find|search)
         if [ -z "${2:-}" ]; then
@@ -187,6 +231,7 @@ case "${1:-list}" in
         echo "Commands:"
         echo "  list, ls          - List all pinned dock applications"
         echo "  config, cfg       - Show dock configuration"
+        echo "  set <key> <val>   - Set a dock-config key"
         echo "  find <term>       - Search for installed applications"
         echo "  add <app.desktop> - Add an application to the dock"
         echo "  remove <app>      - Remove an application from the dock"
@@ -194,6 +239,7 @@ case "${1:-list}" in
         echo "Examples:"
         echo "  $0 list"
         echo "  $0 config"
+        echo "  $0 set DOCK_CENTERED false"
         echo "  $0 find firefox"
         echo "  $0 add org.gnome.Calculator.desktop"
         echo "  $0 remove binance.desktop"

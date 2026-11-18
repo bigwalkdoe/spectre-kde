@@ -173,9 +173,11 @@ dock_menu() {
         echo -e "${GREEN}3)${NC} Add App to Dock"
         echo -e "${GREEN}4)${NC} Remove App from Dock"
         echo -e "${GREEN}5)${NC} View Dock Configuration"
+        echo -e "${GREEN}6)${NC} Set Dock Config Key (e.g. DOCK_CENTERED, DOCK_FIT_TO_CONTENT)"
+        echo -e "${GREEN}7)${NC} Enforce Dock View Settings (normalize screen groups)"
         echo -e "${RED}0)${NC} Back to Main Menu"
         echo ""
-        echo -n "Enter your choice [0-5]: "
+        echo -n "Enter your choice [0-7]: "
         read -r choice
         case $choice in
             1)
@@ -214,6 +216,31 @@ dock_menu() {
             5)
                 echo ""
                 "$ROOT/scripts/manage-dock.sh" config
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            6)
+                echo ""
+                echo -n "Dock config key (e.g. DOCK_CENTERED): "
+                read -r dkey
+                echo -n "Value (e.g. true/false): "
+                read -r dval
+                echo ""
+                if [ -n "$dkey" ] && [ -n "$dval" ]; then
+                    "$ROOT/scripts/manage-dock.sh" set "$dkey" "$dval"
+                else
+                    echo -e "${RED}Key and value are required${NC}"
+                fi
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            7)
+                echo ""
+                if [ -x "$ROOT/scripts/enforce-dock-view-settings.sh" ]; then
+                    "$ROOT/scripts/enforce-dock-view-settings.sh" || true
+                else
+                    echo -e "${RED}enforce-dock-view-settings.sh not found${NC}"
+                fi
                 echo ""
                 read -p "Press Enter to continue..."
                 ;;
@@ -563,14 +590,10 @@ dock_config_menu() {
     echo -e "${BOLD}DOCK CONFIGURATION${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    if [ -f "$ROOT/scripts/dock-config" ]; then
-        cat "$ROOT/scripts/dock-config"
-        echo ""
-        echo -e "${YELLOW}Edit with:${NC} nano $ROOT/scripts/dock-config"
-        echo -e "${YELLOW}Then run:${NC} ./apply.sh to apply changes"
-    else
-        echo -e "${RED}Dock config not found${NC}"
-    fi
+    "$ROOT/scripts/manage-dock.sh" config 2>/dev/null || true
+    echo ""
+    echo -e "${YELLOW}Edit with:${NC} nano $ROOT/scripts/dock-config"
+    echo -e "${YELLOW}Then run:${NC} ./quick-update.sh or ./apply.sh to apply changes"
     echo ""
     read -p "Press Enter to continue..."
 }
@@ -584,12 +607,64 @@ topbar_config_menu() {
         cat "$ROOT/scripts/topbar-config"
         echo ""
         echo -e "${YELLOW}Edit with:${NC} nano $ROOT/scripts/topbar-config"
-        echo -e "${YELLOW}Then run:${NC} ./apply.sh or ./quick-update.sh to apply changes"
+        echo -e "${YELLOW}Then run:${NC} ./quick-update.sh or ./apply.sh to apply changes"
     else
         echo -e "${RED}Top bar config not found${NC}"
     fi
     echo ""
     read -p "Press Enter to continue..."
+}
+
+topbar_menu() {
+    while true; do
+        show_header
+        show_status
+        echo -e "${BOLD}TOP BAR MANAGEMENT${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo -e "${GREEN}1)${NC} Show Status"
+        echo -e "${GREEN}2)${NC} List Config"
+        echo -e "${GREEN}3)${NC} Toggle App Menu"
+        echo -e "${GREEN}4)${NC} Toggle Pager"
+        echo -e "${GREEN}5)${NC} Toggle Network Speed Visibility"
+        echo -e "${GREEN}6)${NC} Set Network Speed Mode (dual/download/upload)"
+        echo -e "${GREEN}7)${NC} Set Network Speed Labels (on/off)"
+        echo -e "${GREEN}8)${NC} Toggle System Tray"
+        echo -e "${GREEN}9)${NC} Toggle Clock"
+        echo -e "${GREEN}10)${NC} Reset Top Bar Defaults"
+        echo -e "${RED}0)${NC} Back to Main Menu"
+        echo ""
+        echo -n "Enter your choice [0-10]: "
+        read -r choice
+        case $choice in
+            1) echo ""; "$ROOT/scripts/manage-topbar.sh" status; echo ""; read -p "Press Enter to continue..." ;;
+            2) echo ""; "$ROOT/scripts/manage-topbar.sh" list; echo ""; read -p "Press Enter to continue..." ;;
+            3) echo ""; "$ROOT/scripts/manage-topbar.sh" toggle appmenu; echo ""; read -p "Press Enter to continue..." ;;
+            4) echo ""; "$ROOT/scripts/manage-topbar.sh" toggle pager; echo ""; read -p "Press Enter to continue..." ;;
+            5) echo ""; "$ROOT/scripts/manage-topbar.sh" toggle netspeed; echo ""; read -p "Press Enter to continue..." ;;
+            6)
+                echo ""
+                echo -n "Mode (dual/download/upload): "
+                read -r mode
+                echo ""
+                [ -n "$mode" ] && "$ROOT/scripts/manage-topbar.sh" netspeed-mode "$mode" || echo -e "${RED}Mode required${NC}"
+                echo ""; read -p "Press Enter to continue..."
+                ;;
+            7)
+                echo ""
+                echo -n "Labels (on/off): "
+                read -r labels
+                echo ""
+                [ -n "$labels" ] && "$ROOT/scripts/manage-topbar.sh" netspeed-labels "$labels" || echo -e "${RED}Value required${NC}"
+                echo ""; read -p "Press Enter to continue..."
+                ;;
+            8) echo ""; "$ROOT/scripts/manage-topbar.sh" toggle tray; echo ""; read -p "Press Enter to continue..." ;;
+            9) echo ""; "$ROOT/scripts/manage-topbar.sh" toggle clock; echo ""; read -p "Press Enter to continue..." ;;
+            10) echo ""; "$ROOT/scripts/manage-topbar.sh" reset; echo ""; read -p "Press Enter to continue..." ;;
+            0) break ;;
+            *) echo -e "${RED}Invalid choice${NC}"; sleep 1 ;;
+        esac
+    done
 }
 
 nightlight_menu() {
@@ -1111,29 +1186,37 @@ while true; do
             ;;
         22)
             echo ""
-            echo -n "Enter profile name: "
+            "$ROOT/scripts/manage-profile.sh" list
+            echo ""
+            echo -n "Enter profile name to export: "
             read -r pname
             echo ""
             if [ -z "$pname" ]; then
                 echo -e "${RED}Profile name cannot be empty${NC}"
             else
-                "$ROOT/scripts/export-profile.sh" "$pname"
+                "$ROOT/scripts/manage-profile.sh" export "$pname"
             fi
             echo ""
             read -p "Press Enter to continue..."
             ;;
         23)
             echo ""
-            echo -e "${BOLD}Available profiles:${NC}"
-            ls -1 "$ROOT/profiles/" 2>/dev/null || echo "  (none)"
+            "$ROOT/scripts/manage-profile.sh" list
             echo ""
-            echo -n "Enter profile name to import: "
+            echo -n "Enter profile name to import (or 'show <name>' not supported here, use name only): "
             read -r pname
             echo ""
             if [ -z "$pname" ]; then
                 echo -e "${RED}Profile name cannot be empty${NC}"
             else
-                "$ROOT/scripts/import-profile.sh" "$pname"
+                "$ROOT/scripts/manage-profile.sh" show "$pname" || true
+                echo ""
+                echo -n "Import this profile now? [y/N]: "
+                read -r yn
+                case "$yn" in
+                    y|Y) "$ROOT/scripts/manage-profile.sh" import "$pname" ;;
+                    *) echo "Skipped import." ;;
+                esac
             fi
             echo ""
             read -p "Press Enter to continue..."
@@ -1154,10 +1237,7 @@ while true; do
             tray_menu
             ;;
         27)
-            echo ""
-            "$ROOT/scripts/manage-topbar.sh" list
-            echo ""
-            read -p "Press Enter to continue..."
+            topbar_menu
             ;;
         28)
             splash_menu

@@ -41,16 +41,39 @@ RC
 
 run(){ PATH="$WORK/bin:$PATH" HOME="$WORK" bash "$WORK/scripts/set-netspeed-compact.sh" "$@"; }
 
-echo "=== test-set-netspeed-compact: applies to top panel ==="
+echo "=== test-set-netspeed-compact: applies dual compact by default ==="
 : > "$WORK/.kwrite.log"
 OUT="$(run "('panelIds=100,200|layout complete',)" 2>&1)"
 case "$OUT" in *"applied to top panel 100 applet 105"*) ok "found and applied" ;; *) no "out: $OUT" ;; esac
 if grep -q 'chartFace.*textonly' "$WORK/.kwrite.log"; then ok "sets textonly"; else no "no textonly write: $(cat "$WORK/.kwrite.log")"; fi
 if grep -Fq -- '--delete' "$WORK/.kwrite.log"; then ok "deletes title"; else no "no delete: $(cat "$WORK/.kwrite.log")"; fi
 if grep -Fq 'network/all/download' "$WORK/.kwrite.log" && grep -Fq 'network/all/upload' "$WORK/.kwrite.log"; then ok "sets download+upload sensors"; else no "sensor write unexpected: $(cat "$WORK/.kwrite.log")"; fi
-if grep -Fq 'sensorLabels' "$WORK/.kwrite.log"; then ok "sets sensor labels"; else no "no sensorLabels write: $(cat "$WORK/.kwrite.log")"; fi
+if grep -Fq 'sensorLabels' "$WORK/.kwrite.log" && grep -Fq '" "' "$WORK/.kwrite.log"; then ok "sets blank sensor labels for compact mode"; else no "no blank labels: $(cat "$WORK/.kwrite.log")"; fi
+
+echo "=== test-set-netspeed-compact: download-only mode ==="
+cat > "$WORK/scripts/topbar-config" <<'CFG'
+TOPBAR_SHOW_NETSPEED=true
+TOPBAR_NETSPEED_MODE=download
+TOPBAR_NETSPEED_LABELS=false
+CFG
+: > "$WORK/.kwrite.log"
+OUT="$(run "('panelIds=100,200|layout complete',)" 2>&1)"
+grep -Fq '["network/all/download"]' "$WORK/.kwrite.log" && ok "sets download-only sensor" || no "expected download-only sensor: $(cat "$WORK/.kwrite.log")"
+if grep -Fq 'network/all/upload' "$WORK/.kwrite.log"; then no "should not set upload in download mode"; else ok "omits upload sensor in download mode"; fi
+
+echo "=== test-set-netspeed-compact: upload-only mode with labels ==="
+cat > "$WORK/scripts/topbar-config" <<'CFG'
+TOPBAR_SHOW_NETSPEED=true
+TOPBAR_NETSPEED_MODE=upload
+TOPBAR_NETSPEED_LABELS=true
+CFG
+: > "$WORK/.kwrite.log"
+OUT="$(run "('panelIds=100,200|layout complete',)" 2>&1)"
+grep -Fq '["network/all/upload"]' "$WORK/.kwrite.log" && ok "sets upload-only sensor" || no "expected upload-only sensor: $(cat "$WORK/.kwrite.log")"
+if grep -Fq 'sensorLabels' "$WORK/.kwrite.log" && grep -Fq 'Upload' "$WORK/.kwrite.log"; then ok "sets visible labels when enabled"; else no "expected visible labels: $(cat "$WORK/.kwrite.log")"; fi
 
 echo "=== test-set-netspeed-compact: skips when no panel id ==="
+rm -f "$WORK/scripts/topbar-config"
 : > "$WORK/.kwrite.log"
 OUT="$(run "('no ids',)" 2>&1)"
 case "$OUT" in *"skipping"*) ok "skips without panel id" ;; *) no "out: $OUT" ;; esac

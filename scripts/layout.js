@@ -52,8 +52,12 @@ topPanel.offset = 0;
 var showAppMenu = "@TOPBAR_SHOW_APP_MENU@";
 var showPager = "@TOPBAR_SHOW_PAGER@";
 var showNetSpeed = "@TOPBAR_SHOW_NETSPEED@";
+var netSpeedMode = "@TOPBAR_NETSPEED_MODE@";
+var netSpeedLabels = "@TOPBAR_NETSPEED_LABELS@";
 var showTray = "@TOPBAR_SHOW_TRAY@";
 var showClock = "@TOPBAR_SHOW_CLOCK@";
+if (netSpeedMode.indexOf("@") !== -1) netSpeedMode = "dual";
+if (netSpeedLabels.indexOf("@") !== -1) netSpeedLabels = "false";
 if (showAppMenu.indexOf("@") !== -1 || showAppMenu === "true") {
     topPanel.addWidget("org.kde.plasma.appmenu");       // Global Menu (app menus + fallback)
     topPanel.addWidget("org.kde.plasma.panelspacer");
@@ -63,12 +67,24 @@ if (showPager.indexOf("@") !== -1 || showPager === "true") {
     topPanel.addWidget("org.kde.plasma.panelspacer");
 }
 if (showNetSpeed.indexOf("@") !== -1 || showNetSpeed === "true") {
-    var netspeed = topPanel.addWidget("org.kde.plasma.systemmonitor.net"); // network speed (download+upload, no labels)
+    var netspeed = topPanel.addWidget("org.kde.plasma.systemmonitor.net");
     netspeed.currentConfigGroup = ["Appearance"];
     netspeed.writeConfig("chartFace", "org.kde.ksysguard.textonly");
     netspeed.currentConfigGroup = ["Sensors"];
-    netspeed.writeConfig("highPrioritySensorIds", ["network/all/download", "network/all/upload"]);
-    netspeed.writeConfig("sensorLabels", '{"network/all/download":" ","network/all/upload":" "}');
+    var sensorIds = ["network/all/download", "network/all/upload"];
+    var sensorLabels = '{"network/all/download":" ","network/all/upload":" "}';
+    if (netSpeedMode === "download") {
+        sensorIds = ["network/all/download"];
+        sensorLabels = (netSpeedLabels === "true") ? '{"network/all/download":"Download"}' : '{"network/all/download":" "}';
+    } else if (netSpeedMode === "upload") {
+        sensorIds = ["network/all/upload"];
+        sensorLabels = (netSpeedLabels === "true") ? '{"network/all/upload":"Upload"}' : '{"network/all/upload":" "}';
+    } else {
+        sensorIds = ["network/all/download", "network/all/upload"];
+        sensorLabels = (netSpeedLabels === "true") ? '{"network/all/download":"Down","network/all/upload":"Up"}' : '{"network/all/download":" ","network/all/upload":" "}';
+    }
+    netspeed.writeConfig("highPrioritySensorIds", sensorIds);
+    netspeed.writeConfig("sensorLabels", sensorLabels);
     netspeed.reloadConfig();
 }
 if (showTray.indexOf("@") !== -1 || showTray === "true") {

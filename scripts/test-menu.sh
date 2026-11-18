@@ -27,7 +27,7 @@ for s in status.sh doctor.sh verify.sh quick-update.sh backup.sh rollback.sh \
     chmod +x "$WORK/$s"
 done
 mkdir -p "$WORK/scripts"
-for s in toggle-theme.sh preflight-check.sh export-profile.sh import-profile.sh; do
+for s in toggle-theme.sh preflight-check.sh manage-profile.sh; do
     printf '#!/bin/sh\necho "%s $*" >> "%s"\n' "$s" "$LOG" > "$WORK/scripts/$s"
     chmod +x "$WORK/scripts/$s"
 done
@@ -67,6 +67,15 @@ assert_call(){
     esac
 }
 
+assert_log_contains(){
+    local needle="$1" label="$2" got
+    got="$(cat "$LOG")"
+    case "$got" in
+        *"$needle"*) ok "$label" ;;
+        *) no "$label" "got: ${got:-<none>}" ;;
+    esac
+}
+
 echo "=== test-menu: labels ==="
 run_menu '0\n'
 labels="$(menu_labels)"
@@ -99,8 +108,13 @@ run_menu '18\n\n0\n' ; assert_call "backup.sh"
 run_menu '19\n\n0\n' ; assert_call "rollback.sh"
 run_menu '20\n\n0\n' ; assert_call "sync.sh"
 run_menu '21\n\n0\n' ; assert_call "detect.sh"
-run_menu '22\nprofile1\n\n0\n' ; assert_call "export-profile.sh profile1"
-run_menu '23\nprofile1\n\n0\n' ; assert_call "import-profile.sh profile1"
+run_menu '22\nprofile1\n\n0\n'
+assert_log_contains "manage-profile.sh list" "choice 22 lists profiles"
+assert_log_contains "manage-profile.sh export profile1" "choice 22 runs manage-profile export"
+run_menu '23\nprofile1\ny\n\n0\n'
+assert_log_contains "manage-profile.sh list" "choice 23 lists profiles"
+assert_log_contains "manage-profile.sh show profile1" "choice 23 shows profile before import"
+assert_log_contains "manage-profile.sh import profile1" "choice 23 runs manage-profile import on confirm"
 run_menu '24\n\n0\n' ; assert_call "install-deps.sh"
 run_menu '25\n\n0\n' ; assert_call "reset.sh"
 

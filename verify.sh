@@ -249,6 +249,91 @@ else
     echo "FAIL  dock fits its contents  (expected minLength=-1 maxLength=-1, got '$MIN'/'$MAX')"
     FAILED=$((FAILED+1))
   fi
+  DOCK_FIT_EXPECT="${DOCK_FIT_TO_CONTENT:-true}"
+  PROBE_LEN="$(printf '%s\n' "$PROBE" | sed -n 's/^bottom;.*;lenMode=\([^;]*\).*pid='"$DOCK_PID"'$/\1/p' | tail -1)"
+  if [ "$DOCK_FIT_EXPECT" = "true" ]; then
+    case "$PROBE_LEN" in
+      fit|1) echo "PASS  dock lengthMode = fit (live)" ;;
+      '')    echo "INFO  dock lengthMode unavailable from live probe" ;;
+      *)     echo "FAIL  dock lengthMode = fit  (expected fit, got '$PROBE_LEN')"; FAILED=$((FAILED+1)) ;;
+    esac
+  else
+    case "$PROBE_LEN" in
+      fill|0) echo "PASS  dock lengthMode = fill (live)" ;;
+      '')     echo "INFO  dock lengthMode unavailable from live probe" ;;
+      *)      echo "FAIL  dock lengthMode = fill  (expected fill, got '$PROBE_LEN')"; FAILED=$((FAILED+1)) ;;
+    esac
+  fi
+fi
+
+echo "--- top bar netspeed config ---"
+if want "$TB_NETSPEED"; then
+  if command -v python3 >/dev/null 2>&1; then
+    NET_MODE="${TOPBAR_NETSPEED_MODE:-dual}"
+    NET_LABELS="${TOPBAR_NETSPEED_LABELS:-false}"
+    NET_CHECK="$(python3 - "$CFG/plasma-org.kde.plasma.desktop-appletsrc" "$NET_MODE" "$NET_LABELS" <<'PY'
+import re, sys
+path, mode, labels_on = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    text = open(path).read()
+except Exception:
+    print('missing')
+    sys.exit(0)
+# find netspeed applet(s)
+applet_re = re.compile(r'^\[Containments\]\[(\d+)\]\[Applets\]\[(\d+)\]$', re.M)
+found = False
+for m in applet_re.finditer(text):
+    cont, app = m.group(1), m.group(2)
+    start = m.end()
+    nxt = re.search(r'^\[Containments\]\[\d+\]', text[start:], re.M)
+    body = text[start:start+nxt.start()] if nxt else text[start:]
+    if not re.search(r'^plugin=org\.kde\.plasma\.systemmonitor\.net$', body, re.M):
+        continue
+    found = True
+    sec = f'[Containments][{cont}][Applets][{app}][Configuration][Sensors]'
+    idx = text.find(sec)
+    sensors = ''
+    if idx != -1:
+        rest = text[idx+len(sec):]
+        nxt2 = re.search(r'^\[', rest, re.M)
+        sensors = rest[:nxt2.start()] if nxt2 else rest
+    ids_m = re.search(r'^highPrioritySensorIds=(.*)$', sensors, re.M)
+    lbl_m = re.search(r'^sensorLabels=(.*)$', sensors, re.M)
+    ids = ids_m.group(1).strip() if ids_m else ''
+    labels = lbl_m.group(1).strip() if lbl_m else ''
+
+    if mode == 'download':
+        ok_ids = ('network/all/download' in ids and 'network/all/upload' not in ids)
+    elif mode == 'upload':
+        ok_ids = ('network/all/upload' in ids and 'network/all/download' not in ids)
+    else:
+        mode = 'dual'
+        ok_ids = ('network/all/download' in ids and 'network/all/upload' in ids)
+
+    if labels_on == 'true':
+        ok_labels = labels not in ('', '{}', '[]')
+    else:
+        # compact: blank/absent or space-only labels
+        ok_labels = (not labels) or labels in ('{}', '[]') or ('" "' in labels) or ('Download' not in labels and 'Upload' not in labels and 'Down' not in labels and 'Up' not in labels)
+
+    print(('ok' if ok_ids and ok_labels else 'bad') + '|' + mode + '|' + labels_on + '|' + ids + '|' + labels)
+    break
+if not found:
+    print('none')
+PY
+)"
+    case "$NET_CHECK" in
+      ok\|*) echo "PASS  netspeed widget configured (mode=$NET_MODE labels=$NET_LABELS)" ;;
+      bad\|*) echo "FAIL  netspeed widget config mismatch for mode=$NET_MODE labels=$NET_LABELS  (${NET_CHECK#bad|})"; FAILED=$((FAILED+1)) ;;
+      none)  echo "FAIL  netspeed widget config not found in appletsrc"; FAILED=$((FAILED+1)) ;;
+      missing) echo "INFO  cannot check netspeed config (appletsrc missing)" ;;
+      *) echo "INFO  could not determine netspeed config ($NET_CHECK)" ;;
+    esac
+  else
+    SKIP "netspeed widget config check (python3 not available)"
+  fi
+else
+  SKIP "netspeed widget config check (disabled in scripts/topbar-config)"
 fi
 
 echo "--- kwin ---"

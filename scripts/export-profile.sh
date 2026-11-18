@@ -6,6 +6,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PROFILE_NAME="${1:-default}"
+case "$PROFILE_NAME" in
+    ''|*[!A-Za-z0-9._-]*)
+        echo "Error: invalid profile name '$PROFILE_NAME' (allowed: letters, digits, dot, underscore, hyphen)" >&2
+        exit 1
+        ;;
+esac
 PROFILE_DIR="$ROOT/profiles/$PROFILE_NAME"
 
 echo "Exporting profile: $PROFILE_NAME"

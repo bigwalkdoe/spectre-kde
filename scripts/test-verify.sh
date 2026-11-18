@@ -117,6 +117,139 @@ lacks "no invalid fontconfig caches" \
 lacks "no fs-verity digest mismatch" \
   "--no-health does not print an fs-verity verdict"
 
+echo "=== test-verify: dock lengthMode and netspeed config checks ==="
+set_new cfgok
+stub cfgok journalctl 'echo "systemd: Started Session 12 of user deon."'
+stub cfgok fc-cache 'exit 0'
+# minimal stubs for commands verify.sh may call
+for cmd in plasmashell systemctl busctl kscreen-doctor plasma-apply-colorscheme plasma-apply-desktoptheme plasma-apply-lookandfeel plasma-apply-wallpaperimage kwriteconfig6 uuidgen flock cmp timeout sddm-greeter-qt6; do
+  case "$cmd" in
+    plasmashell) stub cfgok "$cmd" 'if [ "$1" = "--version" ]; then echo "plasmashell 6.3.4"; fi; exit 0' ;;
+    systemctl) stub cfgok "$cmd" 'if [ "$1" = "--user" ] && [ "$2" = "is-active" ]; then echo "active"; fi; exit 0' ;;
+    *) stub cfgok "$cmd" 'exit 0' ;;
+  esac
+done
+# kreadconfig6 stub: read simple key from ini-like plasmashellrc or other files
+cat > "$WORK/cfgok/kreadconfig6" <<'KRC'
+#!/usr/bin/env bash
+file="$HOME/.config/plasmashellrc"; g1=""; g2=""; g3=""; key=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --file) file="$HOME/.config/$2"; shift 2 ;;
+    --group)
+      if [ -z "$g1" ]; then g1="$2"; elif [ -z "$g2" ]; then g2="$2"; else g3="$2"; fi
+      shift 2 ;;
+    --key) key="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+python3 - "$file" "$g1" "$g2" "$g3" "$key" <<'PY'
+import sys, os, re
+path,g1,g2,g3,key=sys.argv[1:6]
+if not os.path.exists(path): sys.exit(0)
+# try deepest matching section first
+secs=[]
+if g3: secs.append(f"[{g1}][{g2}][{g3}]")
+if g2: secs.append(f"[{g1}][{g2}]")
+secs.append(f"[{g1}]")
+text=open(path).read()
+for sec in secs:
+    if sec in text:
+        rest=text.split(sec,1)[1]
+        m=re.search(r'\n\[', rest)
+        body=rest[:m.start()+1] if m else rest
+        mm=re.search(rf'^{re.escape(key)}=(.*)$', body, re.M)
+        if mm:
+            print(mm.group(1))
+            sys.exit(0)
+PY
+exit 0
+KRC
+chmod +x "$WORK/cfgok/kreadconfig6"
+# gdbus stub returns probe with dock pid 20, fit lenMode, netspeed in top panel
+cat > "$WORK/cfgok/gdbus" <<'GDBUS'
+#!/usr/bin/env bash
+if printf '%s ' "$@" | grep -q 'evaluateScript'; then
+  echo "('count=2|panelids=10,20|top;h=30;float=false;align=132;screen=0;lenMode=fill;widgets=org.kde.plasma.appmenu,org.kde.plasma.systemmonitor.net,org.kde.plasma.systemtray,org.kde.plasma.digitalclock;pid=10|bottom;h=52;float=true;align=132;screen=0;lenMode=fit;widgets=org.kde.plasma.kickoff,org.kde.plasma.icontasks,org.kde.plasma.trash;pid=20',)"
+  exit 0
+fi
+exit 0
+GDBUS
+chmod +x "$WORK/cfgok/gdbus"
+
+# fixture HOME/config
+CFGOK_HOME="$WORK/home-cfgok"
+mkdir -p "$CFGOK_HOME/.config" "$CFGOK_HOME/.local/share/plasma/look-and-feel"
+cat > "$CFGOK_HOME/.config/plasmashellrc" <<'RC'
+[PlasmaViews][Panel 10]
+alignment=132
+panelVisibility=2
+
+[PlasmaViews][Panel 20]
+alignment=132
+panelVisibility=2
+
+[PlasmaViews][Panel 20][Defaults]
+minLength=-1
+maxLength=-1
+RC
+cat > "$CFGOK_HOME/.config/plasma-org.kde.plasma.desktop-appletsrc" <<'RC'
+[Containments][100]
+plugin=org.kde.panel
+
+[Containments][100][Applets][105]
+plugin=org.kde.plasma.systemmonitor.net
+
+[Containments][100][Applets][105][Configuration][Sensors]
+highPrioritySensorIds=["network/all/download","network/all/upload"]
+sensorLabels={"network/all/download":" ","network/all/upload":" "}
+
+[Containments][200]
+plugin=org.kde.panel
+
+[Containments][200][Applets][205]
+plugin=org.kde.plasma.icontasks
+
+[Containments][200][Applets][205][Configuration][General]
+launchers=applications:org.kde.dolphin.desktop
+RC
+mkdir -p "$WORK/repo-cfgok/scripts"
+# minimal root files/dirs referenced by verify paths when run from ROOT? we'll run with real ROOT but HOME overridden
+# run verify in fixture context (many other checks may fail, but our target lines should appear)
+OUT="$(PATH="$WORK/cfgok:$PATH" HOME="$CFGOK_HOME" bash "$ROOT/verify.sh" --no-health 2>&1)" || true
+has "PASS  dock lengthMode = fit (live)" \
+  "verify reports PASS for dock lengthMode fit from live probe"
+has "PASS  netspeed widget configured (mode=dual labels=false)" \
+  "verify reports PASS for compact netspeed config"
+
+# bad netspeed config case
+set_new cfgbad
+stub cfgbad journalctl 'echo "systemd: Started Session 12 of user deon."'
+stub cfgbad fc-cache 'exit 0'
+for cmd in plasmashell systemctl busctl kscreen-doctor plasma-apply-colorscheme plasma-apply-desktoptheme plasma-apply-lookandfeel plasma-apply-wallpaperimage kwriteconfig6 uuidgen flock cmp timeout sddm-greeter-qt6; do
+  case "$cmd" in
+    plasmashell) stub cfgbad "$cmd" 'if [ "$1" = "--version" ]; then echo "plasmashell 6.3.4"; fi; exit 0' ;;
+    systemctl) stub cfgbad "$cmd" 'if [ "$1" = "--user" ] && [ "$2" = "is-active" ]; then echo "active"; fi; exit 0' ;;
+    *) stub cfgbad "$cmd" 'exit 0' ;;
+  esac
+done
+cp "$WORK/cfgok/kreadconfig6" "$WORK/cfgbad/kreadconfig6"
+cp "$WORK/cfgok/gdbus" "$WORK/cfgbad/gdbus"
+CFGBAD_HOME="$WORK/home-cfgbad"
+mkdir -p "$CFGBAD_HOME/.config"
+cp "$CFGOK_HOME/.config/plasmashellrc" "$CFGBAD_HOME/.config/plasmashellrc"
+cat > "$CFGBAD_HOME/.config/plasma-org.kde.plasma.desktop-appletsrc" <<'RC'
+[Containments][100][Applets][105]
+plugin=org.kde.plasma.systemmonitor.net
+
+[Containments][100][Applets][105][Configuration][Sensors]
+highPrioritySensorIds=["network/all/download"]
+sensorLabels={"network/all/download":"Download"}
+RC
+OUT="$(PATH="$WORK/cfgbad:$PATH" HOME="$CFGBAD_HOME" bash "$ROOT/verify.sh" --no-health 2>&1)" || true
+has "FAIL  netspeed widget config mismatch for mode=dual labels=false" \
+  "verify reports FAIL for non-compact netspeed config"
+
 echo "--- result ---"
 if [ "$fails" -eq 0 ]; then
   echo "test-verify: ALL PASS"
@@ -124,3 +257,4 @@ if [ "$fails" -eq 0 ]; then
 fi
 echo "test-verify: $fails FAILURE(S)"
 exit 1
+

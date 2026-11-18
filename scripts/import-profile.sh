@@ -6,7 +6,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PROFILE_NAME="${1:-}"
-PROFILE_DIR="$ROOT/profiles/$PROFILE_NAME"
 
 if [ -z "$PROFILE_NAME" ]; then
     echo "Usage: $0 <profile-name>"
@@ -15,6 +14,15 @@ if [ -z "$PROFILE_NAME" ]; then
     ls -1 "$ROOT/profiles/" 2>/dev/null || echo "  (none)"
     exit 1
 fi
+
+case "$PROFILE_NAME" in
+    ''|*[!A-Za-z0-9._-]*)
+        echo "Error: invalid profile name '$PROFILE_NAME' (allowed: letters, digits, dot, underscore, hyphen)" >&2
+        exit 1
+        ;;
+esac
+
+PROFILE_DIR="$ROOT/profiles/$PROFILE_NAME"
 
 if [ ! -d "$PROFILE_DIR" ]; then
     echo "Error: Profile not found: $PROFILE_DIR"

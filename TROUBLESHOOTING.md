@@ -110,21 +110,23 @@ You can also preview apply behavior without making changes:
 ### 5. Panels/widgets/layout issues
 
 **Symptoms**
-- Dock/top bar widgets missing, tray items not pinned as expected, or layout inconsistencies.
+- Dock/top bar widgets missing, tray items not pinned as expected, layout inconsistencies, or dock not centered/fit-to-content after monitor/screen changes.
 
 **What to do**
 - Use the targeted managers instead of reapplying everything:
   ```bash
-  ./scripts/manage-dock.sh
-  ./scripts/manage-topbar.sh
+  ./scripts/manage-dock.sh list|config|set DOCK_CENTERED true
+  ./scripts/manage-topbar.sh status|netspeed-mode dual|netspeed-labels off
   ./scripts/manage-tray.sh
   ./scripts/manage-wallpaper.sh
   ```
+- `./scripts/manage-topbar.sh` controls netspeed visibility (`toggle netspeed`) and behavior (`TOPBAR_NETSPEED_MODE=dual|download|upload`, `TOPBAR_NETSPEED_LABELS=true|false`) via `netspeed-mode` / `netspeed-labels` or `set`.
+- `./scripts/manage-dock.sh set <key> <value>` updates `scripts/dock-config`; `./scripts/enforce-dock-view-settings.sh` can normalize live dock panel view settings across existing Plasma screen-specific subgroups when geometry/lengthMode drifts.
 - For a quick targeted refresh (depending on what changed), use:
   ```bash
   ./quick-update.sh
   ```
-- Re-run `./verify.sh` to confirm the current state.
+- Re-run `./verify.sh` to confirm the current state. You can also use `./menu.sh` for guided dock/top-bar/profile actions.
 
 ### 6. Permission or config path issues
 
@@ -135,6 +137,12 @@ You can also preview apply behavior without making changes:
 **What to do**
 - Fix ownership/permissions for your user on the affected directories.
 - Re-run `./doctor.sh` before applying changes again.
+
+## Profiles and configuration helpers
+
+- **Profiles:** use `./scripts/manage-profile.sh list|show <name>|import <name>|export <name>|apply <name>` (profile names allow letters, digits, dot, underscore, hyphen). `./menu.sh` includes profile list/show-before-import and export flows.
+- **Top bar:** edit `scripts/topbar-config` or use `./scripts/manage-topbar.sh` (`status`, `toggle`, `netspeed-mode`, `netspeed-labels`, `reset`) then run `./quick-update.sh` or `./apply.sh`.
+- **Dock:** edit `scripts/dock-config` or use `./scripts/manage-dock.sh config|set ...`; apply with `./quick-update.sh` or `./apply.sh`. Use `./scripts/enforce-dock-view-settings.sh` if existing screen-specific dock view settings need normalization.
 
 ## Backups and recovery
 

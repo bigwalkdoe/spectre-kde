@@ -36,6 +36,8 @@ TOPBAR_HEIGHT_MULTIPLIER="${TOPBAR_HEIGHT_MULTIPLIER:-10/6}"
 TOPBAR_SHOW_APP_MENU="${TOPBAR_SHOW_APP_MENU:-true}"
 TOPBAR_SHOW_PAGER="${TOPBAR_SHOW_PAGER:-true}"
 TOPBAR_SHOW_NETSPEED="${TOPBAR_SHOW_NETSPEED:-true}"
+TOPBAR_NETSPEED_MODE="${TOPBAR_NETSPEED_MODE:-dual}"
+TOPBAR_NETSPEED_LABELS="${TOPBAR_NETSPEED_LABELS:-false}"
 TOPBAR_SHOW_TRAY="${TOPBAR_SHOW_TRAY:-true}"
 TOPBAR_SHOW_CLOCK="${TOPBAR_SHOW_CLOCK:-true}"
 
@@ -58,6 +60,8 @@ LAYOUT_JS="$(sed -e "s|@DOCK_LAUNCHERS@|$DOCK_LAUNCHERS|g" \
                   -e "s|@TOPBAR_SHOW_APP_MENU@|$TOPBAR_SHOW_APP_MENU|g" \
                   -e "s|@TOPBAR_SHOW_PAGER@|$TOPBAR_SHOW_PAGER|g" \
                   -e "s|@TOPBAR_SHOW_NETSPEED@|$TOPBAR_SHOW_NETSPEED|g" \
+                  -e "s|@TOPBAR_NETSPEED_MODE@|$TOPBAR_NETSPEED_MODE|g" \
+                  -e "s|@TOPBAR_NETSPEED_LABELS@|$TOPBAR_NETSPEED_LABELS|g" \
                   -e "s|@TOPBAR_SHOW_TRAY@|$TOPBAR_SHOW_TRAY|g" \
                   -e "s|@TOPBAR_SHOW_CLOCK@|$TOPBAR_SHOW_CLOCK|g" \
                   "$ROOT/scripts/layout.js")" \
@@ -88,40 +92,19 @@ bash "$ROOT/scripts/set-netspeed-compact.sh" "$LAYOUT_OUT" || true
 echo -e "${YELLOW}Cleaning stale plasmashellrc entries...${NC}"
 bash "$ROOT/scripts/clean-plasmashellrc.sh" || true
 
-echo -e "${GREEN}✓ Quick update complete!${NC}"
-echo "Changes to dock/apps/tray should be applied immediately."
-
-# Persist dock settings so they survive reboots.
+echo -e "${YELLOW}Persisting dock panel view settings...${NC}"
 DOCK_FIT_TO_CONTENT="${DOCK_FIT_TO_CONTENT:-true}"
 DOCK_CENTERED="${DOCK_CENTERED:-true}"
 DOCK_FLOATING="${DOCK_FLOATING:-true}"
-
-# layout.js reports panelIds=topPanel,dock
 DOCK_PANEL="$(echo "$LAYOUT_OUT" | grep -oE 'panelIds=[0-9]+,[0-9]+' | head -1 | cut -d= -f2 | cut -d, -f2)"
 if [ -n "$DOCK_PANEL" ]; then
-    if [ "$DOCK_CENTERED" = "true" ]; then
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --key alignment 132 2>/dev/null || true
-    else
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --key alignment 1 2>/dev/null || true
-    fi
-    if [ "$DOCK_FIT_TO_CONTENT" = "true" ]; then
-        # Write fit-to-content in all relevant groups (Defaults + any screen-specific groups)
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Defaults --key minLength -- "-1" 2>/dev/null || true
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group Defaults --key maxLength -- "-1" 2>/dev/null || true
-        # Update any existing screen-specific length groups (e.g. Horizontal1920, Horizontal2560)
-        for grp in $(grep -oE "^\[PlasmaViews\]\[Panel ${DOCK_PANEL}\]\[[^]]+\]" ~/.config/plasmashellrc 2>/dev/null | sed 's/.*\]\[\([^]]*\)\]$/\1/'); do
-            case "$grp" in Defaults) continue ;; esac
-            kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group "$grp" --key minLength -- "-1" 2>/dev/null || true
-            kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --group "$grp" --key maxLength -- "-1" 2>/dev/null || true
-        done
-        gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell --method org.kde.PlasmaShell.evaluateScript "var p=panelById($DOCK_PANEL); if(p){p.lengthMode='fit';}" >/dev/null 2>&1 || true
-    else
-        gdbus call --session --dest org.kde.plasmashell --object-path /PlasmaShell --method org.kde.PlasmaShell.evaluateScript "var p=panelById($DOCK_PANEL); if(p){p.lengthMode='fill';}" >/dev/null 2>&1 || true
-    fi
-    if [ "$DOCK_FLOATING" = "true" ]; then
-        kwriteconfig6 --file ~/.config/plasmashellrc --group PlasmaViews --group "Panel $DOCK_PANEL" --key floating 1 2>/dev/null || true
-    fi
+  bash "$ROOT/scripts/set-dock-view-settings.sh" "$DOCK_PANEL" "$DOCK_FIT_TO_CONTENT" "$DOCK_CENTERED" "$DOCK_FLOATING" || true
+else
+  echo "  note: could not determine dock panel id; skipping dock view persistence"
 fi
+
+echo -e "${GREEN}✓ Quick update complete!${NC}"
+echo "Changes to dock/apps/tray should be applied immediately."
 
 # Restart plasmashell so panel geometry/struts (e.g. fit-content dock) are
 # picked up correctly for window snapping/maximization and dodge behavior.

@@ -13,6 +13,12 @@ TOPBAR_SHOW_PAGER=true
 # Show network speed widget (true/false)
 TOPBAR_SHOW_NETSPEED=true
 
+# Network speed mode: dual, download, upload
+TOPBAR_NETSPEED_MODE=dual
+
+# Show network speed labels (true/false). false = compact values only.
+TOPBAR_NETSPEED_LABELS=false
+
 # Show system tray (true/false)
 TOPBAR_SHOW_TRAY=true
 

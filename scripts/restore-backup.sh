@@ -144,7 +144,10 @@ restore_backup() {
 # Executed directly: restore a backup (default: the newest one).
 if [ "${BASH_SOURCE[0]:-}" = "${0:-}" ]; then
   set -euo pipefail
-  BK="${1:-$(ls -1dt "$HOME"/.config/kde-backups/*/ 2>/dev/null | head -1)}"
+  BK="${1:-}"
+  if [ -z "$BK" ]; then
+    BK="$(ls -1dt "$HOME"/.config/kde-backups/*/ 2>/dev/null | head -1 || true)"
+  fi
   if [ -z "$BK" ]; then
     echo "No backups found under ~/.config/kde-backups/ - nothing to restore." >&2
     exit 1

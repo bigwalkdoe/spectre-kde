@@ -19,6 +19,8 @@ DEFAULTS=(
     "TOPBAR_SHOW_APP_MENU=true"
     "TOPBAR_SHOW_PAGER=true"
     "TOPBAR_SHOW_NETSPEED=true"
+    "TOPBAR_NETSPEED_MODE=dual"
+    "TOPBAR_NETSPEED_LABELS=false"
     "TOPBAR_SHOW_TRAY=true"
     "TOPBAR_SHOW_CLOCK=true"
 )
@@ -60,8 +62,17 @@ list_topbar() {
 
 status_topbar() {
     echo -e "${BLUE}Top bar status:${NC}"
-    for k in TOPBAR_HEIGHT_MULTIPLIER TOPBAR_SHOW_APP_MENU TOPBAR_SHOW_PAGER TOPBAR_SHOW_NETSPEED TOPBAR_SHOW_TRAY TOPBAR_SHOW_CLOCK; do
-        echo "  $k = $(get_val "$k")"
+    for k in TOPBAR_HEIGHT_MULTIPLIER TOPBAR_SHOW_APP_MENU TOPBAR_SHOW_PAGER TOPBAR_SHOW_NETSPEED TOPBAR_NETSPEED_MODE TOPBAR_NETSPEED_LABELS TOPBAR_SHOW_TRAY TOPBAR_SHOW_CLOCK; do
+        local v
+        v="$(get_val "$k")"
+        # provide defaults for new keys in older configs
+        if [ -z "$v" ]; then
+            case "$k" in
+                TOPBAR_NETSPEED_MODE) v="dual" ;;
+                TOPBAR_NETSPEED_LABELS) v="false" ;;
+            esac
+        fi
+        echo "  $k = $v"
     done
 }
 
@@ -89,8 +100,6 @@ toggle_topbar() {
 }
 
 reset_topbar() {
-    printf '%s\n' "${DEFAULTS[@]}" > "$CFG"
-    # preserve header comments? rewrite with header
     {
         echo "# spectre-kde top bar configuration"
         echo "# Customize top bar appearance and widgets"
@@ -107,6 +116,12 @@ reset_topbar() {
         echo "# Show network speed widget (true/false)"
         echo "TOPBAR_SHOW_NETSPEED=true"
         echo ""
+        echo "# Network speed mode: dual, download, upload"
+        echo "TOPBAR_NETSPEED_MODE=dual"
+        echo ""
+        echo "# Show network speed labels (true/false). false = compact values only."
+        echo "TOPBAR_NETSPEED_LABELS=false"
+        echo ""
         echo "# Show system tray (true/false)"
         echo "TOPBAR_SHOW_TRAY=true"
         echo ""
@@ -122,10 +137,32 @@ case "${1:-list}" in
     status|st) status_topbar ;;
     toggle)
         if [ -z "${2:-}" ]; then
-            echo -e "${RED}Error:${NC} provide an item (appmenu|pager|tray|clock)"
+            echo -e "${RED}Error:${NC} provide an item (appmenu|pager|netspeed|tray|clock)"
             exit 1
         fi
         toggle_topbar "$2"
+        ;;
+    netspeed-mode)
+        val="${2:-}"
+        case "$val" in
+            dual|download|upload)
+                set_val "TOPBAR_NETSPEED_MODE" "$val"
+                echo -e "${GREEN}Set TOPBAR_NETSPEED_MODE=${val}${NC}"
+                echo -e "${BLUE}Run './quick-update.sh' to apply${NC}"
+                ;;
+            *) echo -e "${RED}Error:${NC} usage: $0 netspeed-mode <dual|download|upload>"; exit 1 ;;
+        esac
+        ;;
+    netspeed-labels)
+        val="${2:-}"
+        case "$val" in
+            on|true) val="true" ;;
+            off|false) val="false" ;;
+            *) echo -e "${RED}Error:${NC} usage: $0 netspeed-labels <on|off|true|false>"; exit 1 ;;
+        esac
+        set_val "TOPBAR_NETSPEED_LABELS" "$val"
+        echo -e "${GREEN}Set TOPBAR_NETSPEED_LABELS=${val}${NC}"
+        echo -e "${BLUE}Run './quick-update.sh' to apply${NC}"
         ;;
     set)
         if [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
@@ -146,12 +183,16 @@ case "${1:-list}" in
         echo "  list, ls          - Show top bar config"
         echo "  status, st        - Show current values"
         echo "  toggle <item>     - Toggle appmenu|pager|netspeed|tray|clock"
+        echo "  netspeed-mode <m> - Set netspeed mode: dual|download|upload"
+        echo "  netspeed-labels   - Set netspeed labels: on|off|true|false"
         echo "  set <key> <val>   - Set a config key"
         echo "  reset             - Restore defaults"
         echo ""
         echo "Examples:"
         echo "  $0 list"
         echo "  $0 toggle netspeed"
+        echo "  $0 netspeed-mode download"
+        echo "  $0 netspeed-labels on"
         echo "  $0 set TOPBAR_HEIGHT_MULTIPLIER 12/6"
         echo "  $0 reset"
         echo ""
