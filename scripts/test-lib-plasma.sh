@@ -107,8 +107,9 @@ exit 0
 STUB
 chmod +x "$WORK/bin/kreadconfig6"
 
-# Source the library with stubs in PATH
-PATH="$WORK/bin:$PATH" source "$ROOT/scripts/lib/plasma.sh"
+# Source the library with stubs in PATH (export so functions use it at runtime)
+export PATH="$WORK/bin:$PATH"
+source "$ROOT/scripts/lib/plasma.sh"
 
 # Create fake appletsrc
 cat > "$WORK/appletsrc" <<'EOF'
