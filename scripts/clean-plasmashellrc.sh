@@ -38,4 +38,3 @@ for line in lines:
 open(rc, 'w').write(''.join(out))
 PY
 echo "cleaned plasmashellrc (kept panels: $(echo "$PANELS" | tr '\n' ' '))"
-chmod +x /home/deon/dev/github/spectre-kde/scripts/clean-plasmashellrc.sh 2>/dev/null
