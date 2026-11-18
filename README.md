@@ -209,6 +209,41 @@ When running on a live Plasma session, some changes require `plasmashell` restar
 - No live Plasma session is required
 - CI runs the same entry point, so newly added `test-*.sh` files are picked up automatically
 
+## Development Architecture
+
+### Shared Library
+
+`scripts/lib/plasma.sh` provides common utilities for Plasma 6 interaction:
+
+- **Panel detection** — dock panel via `icontasks`, panel IDs from layout output
+- **Config helpers** — safe `kwriteconfig6`/`kreadconfig6` wrappers, PlasmaViews panel/group operations
+- **Plasmashell management** — restart, session detection
+- **Logging** — colorized helpers (`log_ok`, `log_warn`, `log_err`, `log_info`)
+
+Scripts using the library: `apply.sh`, `quick-update.sh`, `scripts/enforce-dock-view-settings.sh`, `scripts/set-dock-view-settings.sh`.
+
+See [`scripts/lib/README.md`](scripts/lib/README.md) for full API documentation.
+
+### Script Organization
+
+| Category | Pattern |
+|----------|---------|
+| Core workflows | `apply.sh`, `quick-update.sh`, `verify.sh`, `menu.sh` |
+| Component managers | `scripts/manage-*.sh` |
+| Profile/backup | `scripts/import-profile.sh`, `scripts/export-profile.sh`, `backup.sh`, `rollback.sh` |
+| Shared library | `scripts/lib/plasma.sh` |
+| Test suites | `scripts/test-*.sh` (auto-discovered by `run-tests.sh`) |
+
+### Adding New Tests
+
+Create `scripts/test-<name>.sh` following existing patterns:
+- Use `set -u`, temp dirs (`mktemp -d`), and `trap` cleanup
+- Stub external KDE tools (`kreadconfig6`, `kwriteconfig6`, `qdbus6`, etc.) in `WORK/bin/`
+- Source the library with `PATH="$WORK/bin:$PATH" source "$ROOT/scripts/lib/plasma.sh"`
+- Print `ok`/`FAIL` lines; exit 0 on all pass, 1 on any failure
+
+The test runner (`scripts/run-tests.sh`) auto-discovers all `test-*.sh` files.
+
 ## Documentation
 
 | Document | Purpose |
@@ -218,6 +253,8 @@ When running on a live Plasma session, some changes require `plasmashell` restar
 | [`SECURITY.md`](SECURITY.md) | Security policy and reporting guidance |
 | [`screenshots/README.md`](screenshots/README.md) | Screenshot catalog and context |
 | [`AGENTS.md`](AGENTS.md) | Repository guidance for AI/code agents |
+| [`scripts/lib/README.md`](scripts/lib/README.md) | Shared Plasma utilities library API |
+| [`CHANGELOG.md`](CHANGELOG.md) | Version history and release notes |
 
 ## License
 
