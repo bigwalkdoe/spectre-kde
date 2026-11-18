@@ -8,8 +8,107 @@ fails=0
 ok(){ printf 'ok   %s\n' "$1"; }
 no(){ printf 'FAIL %s\n       %s\n' "$1" "${2:-}"; fails=$((fails + 1)); }
 
-# Source the library
-source "$ROOT/scripts/lib/plasma.sh"
+# Create stubs for KDE tools
+mkdir -p "$WORK/bin" "$WORK/.config" "$WORK/scripts/lib"
+
+cat > "$WORK/bin/kwriteconfig6" <<'STUB'
+#!/usr/bin/env bash
+file="$HOME/.config/plasmashellrc"; args=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --file)
+      case "$2" in /*) file="$2" ;; *) file="$HOME/.config/$2" ;; esac
+      shift 2 ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+# args: --group ... --key k [--delete|value]
+groups=(); key=""; val=""; del=0
+i=0
+while [ $i -lt ${#args[@]} ]; do
+  a="${args[$i]}"
+  case "$a" in
+    --group) groups+=("${args[$((i+1))]}"); i=$((i+2)) ;;
+    --key) key="${args[$((i+1))]}"; i=$((i+2)) ;;
+    --delete) del=1; i=$((i+1)) ;;
+    *) val="$a"; i=$((i+1)) ;;
+  esac
+done
+sec=""; for g in "${groups[@]}"; do sec+="[$g]"; done
+mkdir -p "$(dirname "$file")"
+python3 - "$file" "$sec" "$key" "$val" "$del" <<'PY'
+import sys, os, re
+path,sec,key,val,dele = sys.argv[1:6]
+dele = (dele == '1')
+text = open(path).read() if os.path.exists(path) else ''
+if sec not in text:
+    if dele:
+        open(path,'w').write(text); sys.exit(0)
+    if text and not text.endswith('\n'): text += '\n'
+    text += sec + '\n' + f'{key}={val}\n'
+    open(path,'w').write(text); sys.exit(0)
+before, rest = text.split(sec,1)
+m = re.search(r'\n\[', rest)
+body = rest[:m.start()+1] if m else rest
+tail = rest[m.start()+1:] if m else ''
+if dele:
+    body = re.sub(rf'^{re.escape(key)}=.*\n?', '', body, flags=re.M)
+else:
+    if re.search(rf'^{re.escape(key)}=.*$', body, re.M):
+        body = re.sub(rf'^{re.escape(key)}=.*$', f'{key}={val}', body, flags=re.M)
+    else:
+        if body == '' or body.startswith('\n'):
+            ins = f'\n{key}={val}\n'
+            body = ins + (body[1:] if body.startswith('\n') else body)
+        else:
+            body = f'\n{key}={val}\n' + body
+open(path,'w').write(before + sec + body + tail)
+PY
+exit 0
+STUB
+chmod +x "$WORK/bin/kwriteconfig6"
+
+cat > "$WORK/bin/kreadconfig6" <<'STUB'
+#!/usr/bin/env bash
+file="$HOME/.config/plasmashellrc"; args=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --file)
+      case "$2" in /*) file="$2" ;; *) file="$HOME/.config/$2" ;; esac
+      shift 2 ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+groups=(); key=""; i=0
+while [ $i -lt ${#args[@]} ]; do
+  a="${args[$i]}"
+  case "$a" in
+    --group) groups+=("${args[$((i+1))]}"); i=$((i+2)) ;;
+    --key) key="${args[$((i+1))]}"; i=$((i+2)) ;;
+    *) i=$((i+1)) ;;
+  esac
+done
+sec=""; for g in "${groups[@]}"; do sec+="[$g]"; done
+[ -f "$file" ] || exit 0
+python3 - "$file" "$sec" "$key" <<'PY'
+import sys, re
+path,sec,key = sys.argv[1:4]
+text = open(path).read()
+if sec not in text:
+    sys.exit(0)
+before, rest = text.split(sec,1)
+m = re.search(r'\n\[', rest)
+body = rest[:m.start()+1] if m else rest
+m2 = re.search(rf'^{re.escape(key)}=(.*?)$', body, re.M)
+if m2:
+    print(m2.group(1))
+PY
+exit 0
+STUB
+chmod +x "$WORK/bin/kreadconfig6"
+
+# Source the library with stubs in PATH
+PATH="$WORK/bin:$PATH" source "$ROOT/scripts/lib/plasma.sh"
 
 # Create fake appletsrc
 cat > "$WORK/appletsrc" <<'EOF'
