@@ -13,9 +13,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="${PLASMA_APPLETSRC_PATH:-$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc}"
-DOCK_CFG="$ROOT/scripts/dock-config"
+# shellcheck source=scripts/lib/plasma.sh
+source "$ROOT/scripts/lib/plasma.sh"
 
+DOCK_CFG="$ROOT/scripts/dock-config"
 # shellcheck disable=SC1090
 [ -f "$DOCK_CFG" ] && . "$DOCK_CFG" || true
 DOCK_FIT_TO_CONTENT="${DOCK_FIT_TO_CONTENT:-true}"
@@ -24,23 +25,11 @@ DOCK_FLOATING="${DOCK_FLOATING:-true}"
 
 DOCK_PANEL="${1:-}"
 if [ -z "$DOCK_PANEL" ]; then
-  if [ -f "$APP" ]; then
-    DOCK_PANEL="$(awk '
-      /^\[Containments\]\[[0-9]+\]$/ {
-        if (id != "" && is_panel && has_tasks) print id
-        id=$0; gsub(/[^0-9]/,"",id); is_panel=0; has_tasks=0; next
-      }
-      /^plugin=org\.kde\.panel$/ { is_panel=1; next }
-      /^plugin=org\.kde\.plasma\.icontasks$/ { has_tasks=1; next }
-      END { if (id != "" && is_panel && has_tasks) print id }
-    ' "$APP" | head -n 1)"
-  fi
-fi
-
-if [ -z "$DOCK_PANEL" ]; then
-  echo "enforce-dock-view-settings: could not detect dock panel (icontasks panel containment) in $APP" >&2
-  exit 1
+    DOCK_PANEL="$(detect_dock_panel_id)" || {
+        log_err "could not detect dock panel (icontasks panel containment)"
+        exit 1
+    }
 fi
 
 bash "$ROOT/scripts/set-dock-view-settings.sh" "$DOCK_PANEL" "$DOCK_FIT_TO_CONTENT" "$DOCK_CENTERED" "$DOCK_FLOATING"
-echo "enforce-dock-view-settings: applied dock view settings to panel $DOCK_PANEL"
+log_ok "applied dock view settings to panel $DOCK_PANEL"

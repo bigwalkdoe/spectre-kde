@@ -9,6 +9,10 @@
 set -u
 ROOT="$(cd "$(dirname "$0")" && pwd)" && cd "$ROOT" || exit 1
 
+# Source shared Plasma utilities
+# shellcheck source=scripts/lib/plasma.sh
+source "$ROOT/scripts/lib/plasma.sh"
+
 QUICK=0
 DRYRUN=0
 VALIDATE=0
@@ -538,11 +542,11 @@ say "Persist dock panel view settings"
 DOCK_FIT_TO_CONTENT="${DOCK_FIT_TO_CONTENT:-true}"
 DOCK_CENTERED="${DOCK_CENTERED:-true}"
 DOCK_FLOATING="${DOCK_FLOATING:-true}"
-DOCK_PANEL="$(echo "$LAYOUT_OUT" | grep -oE 'panelIds=[0-9]+,[0-9]+' | head -1 | cut -d= -f2 | cut -d, -f2)"
+DOCK_PANEL="$(get_dock_panel_id_from_layout "$LAYOUT_OUT")"
 if [ -n "$DOCK_PANEL" ]; then
   bash "$ROOT/scripts/set-dock-view-settings.sh" "$DOCK_PANEL" "$DOCK_FIT_TO_CONTENT" "$DOCK_CENTERED" "$DOCK_FLOATING" || true
 else
-  echo "  note: could not determine dock panel id; skipping dock view persistence"
+  log_warn "could not determine dock panel id; skipping dock view persistence"
 fi
 
 say "Lock screen: ensure system MainBlock.qml is intact"

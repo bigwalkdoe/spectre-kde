@@ -6,14 +6,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Source shared Plasma utilities
+# shellcheck source=scripts/lib/plasma.sh
+source "$ROOT/scripts/lib/plasma.sh"
 
 say(){ echo; echo "### $*"; }
-die(){ echo "FAIL: $*" >&2; exit 1; }
+die(){ log_err "$*"; exit 1; }
 
 echo -e "${BLUE}Quick update: Dock and Panel Layout${NC}"
 echo ""
@@ -96,11 +94,11 @@ echo -e "${YELLOW}Persisting dock panel view settings...${NC}"
 DOCK_FIT_TO_CONTENT="${DOCK_FIT_TO_CONTENT:-true}"
 DOCK_CENTERED="${DOCK_CENTERED:-true}"
 DOCK_FLOATING="${DOCK_FLOATING:-true}"
-DOCK_PANEL="$(echo "$LAYOUT_OUT" | grep -oE 'panelIds=[0-9]+,[0-9]+' | head -1 | cut -d= -f2 | cut -d, -f2)"
+DOCK_PANEL="$(get_dock_panel_id_from_layout "$LAYOUT_OUT")"
 if [ -n "$DOCK_PANEL" ]; then
   bash "$ROOT/scripts/set-dock-view-settings.sh" "$DOCK_PANEL" "$DOCK_FIT_TO_CONTENT" "$DOCK_CENTERED" "$DOCK_FLOATING" || true
 else
-  echo "  note: could not determine dock panel id; skipping dock view persistence"
+  log_warn "could not determine dock panel id; skipping dock view persistence"
 fi
 
 echo -e "${GREEN}✓ Quick update complete!${NC}"

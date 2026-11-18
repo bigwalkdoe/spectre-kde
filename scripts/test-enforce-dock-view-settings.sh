@@ -8,8 +8,9 @@ fails=0
 ok(){ printf 'ok   %s\n' "$1"; }
 no(){ printf 'FAIL %s\n       %s\n' "$1" "${2:-}"; fails=$((fails + 1)); }
 
-mkdir -p "$WORK/repo/scripts" "$WORK/home/.config"
+mkdir -p "$WORK/repo/scripts" "$WORK/repo/scripts/lib" "$WORK/home/.config"
 cp "$ROOT/scripts/enforce-dock-view-settings.sh" "$WORK/repo/scripts/enforce-dock-view-settings.sh"
+cp "$ROOT/scripts/lib/plasma.sh" "$WORK/repo/scripts/lib/plasma.sh"
 chmod +x "$WORK/repo/scripts/enforce-dock-view-settings.sh"
 
 cat > "$WORK/repo/scripts/dock-config" <<'EOF'

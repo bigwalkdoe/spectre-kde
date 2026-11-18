@@ -8,8 +8,9 @@ fails=0
 ok(){ printf 'ok   %s\n' "$1"; }
 no(){ printf 'FAIL %s\n       %s\n' "$1" "${2:-}"; fails=$((fails + 1)); }
 
-mkdir -p "$WORK/bin" "$WORK/.config" "$WORK/scripts"
+mkdir -p "$WORK/bin" "$WORK/.config" "$WORK/scripts" "$WORK/scripts/lib"
 cp "$ROOT/scripts/set-dock-view-settings.sh" "$WORK/scripts/set-dock-view-settings.sh"
+cp "$ROOT/scripts/lib/plasma.sh" "$WORK/scripts/lib/plasma.sh"
 chmod +x "$WORK/scripts/set-dock-view-settings.sh"
 
 cat > "$WORK/bin/kwriteconfig6" <<'STUB'
