@@ -9,7 +9,7 @@
 # Example: org.kde.konsole.desktop  # Terminal
 
 # Active entries:
-terminator.desktop                         # Terminal (opens on login, replaces konsole autostart)
+org.kde.konsole.desktop                    # Terminal (opens on login)
 
 # Example entries (uncomment and customize):
 # org.kde.kdeconnect.daemon.desktop        # KDE Connect
