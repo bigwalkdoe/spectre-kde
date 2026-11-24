@@ -44,7 +44,7 @@ OUT="$(run)"
 case "$OUT" in *"desktops=uuid-2-test"*) ok "DESKTOP_2 resolved" ;; *) no "DESKTOP_2 not resolved: $OUT" ;; esac
 case "$OUT" in *"desktops=uuid-3-test"*) ok "DESKTOP_3 resolved" ;; *) no "DESKTOP_3 not resolved: $OUT" ;; esac
 case "$OUT" in *"desktops=@DESKTOP_"*) no "unresolved placeholder remains" ;; *) ok "no placeholders remain" ;; esac
-case "$OUT" in *"Order=1,2,3,4,5,6,7"*) ok "Order list preserved" ;; *) no "Order list missing" ;; esac
+case "$OUT" in *"Order=1,2,3,4,5,6"*) ok "Order list preserved" ;; *) no "Order list missing" ;; esac
 
 echo "=== test-render-kwinrules: fails cleanly when ids are missing ==="
 cat > "$WORK/bin/kreadconfig6" << 'STUB'

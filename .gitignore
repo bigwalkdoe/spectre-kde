@@ -6,3 +6,6 @@ profiles/*
 !profiles/dev/
 # runtime post-apply screenshots
 screenshots/post-apply-*.png
+
+# editor/backup artifacts
+*.bak

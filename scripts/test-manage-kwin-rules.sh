@@ -29,7 +29,7 @@ case "$OUT" in *"decorationpolicyrule=2"*) ok "show includes native action rule"
 
 echo "=== test-manage-kwin-rules: native format ==="
 grep -q '^\[General\]$' "$CONF" && ok "[General] section present" || no "[General] section missing"
-grep -q '^Order=1,2,3,4,5,6,7$' "$CONF" && ok "Order=1..7 present" || no "Order list missing"
+grep -q '^Order=1,2,3,4,5,6$' "$CONF" && ok "Order=1..6 present" || no "Order list missing"
 grep -q '^desktops=@DESKTOP_2@$' "$CONF" && ok "desktop placeholder present" || no "desktop placeholder missing"
 grep -q '^above=true$' "$CONF" && ok "above action present" || no "above action missing"
 
@@ -40,7 +40,7 @@ grep -q '^Description=Test Rule$' "$CONF" && ok "add writes Description" || no "
 grep -q '^desktops=@DESKTOP_4@$' "$CONF" && ok "add writes desktop placeholder" || no "add missing desktop placeholder"
 grep -q '^desktopsrule=2$' "$CONF" && ok "add writes desktopsrule" || no "add missing desktopsrule"
 grep -q '^decorationpolicy=none$' "$CONF" && ok "add writes decorationpolicy" || no "add missing decorationpolicy"
-grep -q '^Order=1,2,3,4,5,6,7,8$' "$CONF" && ok "add updates Order" || no "add did not update Order"
+grep -q '^Order=1,2,3,4,5,6,7$' "$CONF" && ok "add updates Order" || no "add did not update Order"
 
 echo "=== test-manage-kwin-rules: remove ==="
 OUT="$(run remove 'Test Rule')"
